@@ -1,10 +1,7 @@
 # Bootstrap
 
-- Create a "bootstrap" cloud space on be-gen-1
-- Create a "bootstrap" virtual machine in this "bootstrap" cloud space
-- Create a port forward for port 22 on the "bootstrap" VM
+Steps:
 
-Next:
 - [Authorize your SSH key](#authorize)
 - [Install the Z Utilities](#install-bash-tools)
 - [Install JumpScale](#install-jumpscale)
@@ -12,7 +9,17 @@ Next:
 - [Get your API key](#api-key)
 - [Test OVC Client](#test-ovc)
 
-<a id="authorize></a>
+<a id="prep"></a>
+## Preparation
+
+- Create your ItsYou.online user profile
+- Logon to an OpenvCloud environment using your ItsYou.online credentials
+- Contact an OpenvCloud adminstrator to grant access to an OpenvCloud account
+- Create a "bootstrap" cloud space on be-gen-1
+- Create a "bootstrap" virtual machine in this "bootstrap" cloud space
+- Create a port forward for port 22 on the "bootstrap" VM
+
+<a id="authorize"></a>
 ## Authorize your SSH key
 
 Login to the "bootstrap" VM:
@@ -70,7 +77,7 @@ export JS9BRANCH=9.2.1
 ZInstall_host_js9_full
 ```
 
-<a id="jose></a>
+<a id="jose"></a>
 ## Install JOSE Python package
 
 Execute:
@@ -78,7 +85,7 @@ Execute:
 pip install python-jose
 ```
 
-<a id="api-key></a>
+<a id="api-key"></a>
 ## Get your API key
 
 Save your API key to environment variables:
@@ -97,7 +104,7 @@ Source the updated `bash_profile`:
 . ~/.bash_profile
 ```
 
-<a id="test-ovc></a>
+<a id="test-ovc"></a>
 ## Test OVC Client
 
 Start the interactive shell:
