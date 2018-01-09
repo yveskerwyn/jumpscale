@@ -1,7 +1,7 @@
 # Bootstrap
 
 Steps:
-
+- [Prepare](#prep)
 - [Authorize your SSH key](#authorize)
 - [Install the Z Utilities](#install-bash-tools)
 - [Install JumpScale](#install-jumpscale)
@@ -10,7 +10,7 @@ Steps:
 - [Test OVC Client](#test-ovc)
 
 <a id="prep"></a>
-## Preparation
+## Prepare
 
 - Create your ItsYou.online user profile
 - Logon to an OpenvCloud environment using your ItsYou.online credentials
