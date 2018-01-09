@@ -1,6 +1,11 @@
 # Test OpenvCloud Blueprints
 
-First create GitHub repository using the GitHub your personal access token:
+First make sure you have added the OpenvCloud templates:
+```python
+ays.templates.addTemplates("https://github.com/openvcloud/ays_templates", "master")
+```
+
+(Optionally) create a GitHub repository using your personal access token:
 ```python
 token = os.environ["GITHUB_PAT"]
 github = j.clients.github.getClient(token)
@@ -9,7 +14,7 @@ github_repo = github.createRepo(test_repo_name, private=False)
 repo_ssh_url = github_repo.ssh_url
 ```
 
-Add the SSH key used by the AYS server to GitHub:
+(Optionally) add the SSH key used by the AYS server to GitHub:
 ```python
 #ays_pub_key = j.clients.ssh.SSHKeyGetFromAgentPub('/root/.ssh/ays_repos_key')
 ays_pub_key = ays_host.prefab.core.file_read('/root/.ssh/ays_repos_key.pub')
