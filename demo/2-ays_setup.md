@@ -1,4 +1,6 @@
-## AYS Setup
+# AYS Setup
+
+Execute the below steps from an environment with JumpScale 9.2.1 installed, as documented in [Bootstrap](1-bootstrap.md).
 
 Steps:
 - [Variables](#vars)

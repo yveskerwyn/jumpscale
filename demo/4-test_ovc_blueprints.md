@@ -1,11 +1,11 @@
 # Test OpenvCloud Blueprints
 
-First make sure you have added the OpenvCloud templates:
+First make sure you have added the OpenvCloud templates add to your AYS server:
 ```python
 ays.templates.addTemplates("https://github.com/openvcloud/ays_templates", "master")
 ```
 
-(Optionally) create a GitHub repository using your personal access token:
+(Optionally) create a GitHub repository using your GitHub personal access token:
 ```python
 token = os.environ["GITHUB_PAT"]
 github = j.clients.github.getClient(token)
