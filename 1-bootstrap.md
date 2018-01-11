@@ -10,12 +10,14 @@ Steps:
 - [Install the Z Utilities](#install-bash-tools)
 - [Install JumpScale](#install-jumpscale)
 - [Install JOSE Python package](#jose)
-- [Get your API key](#api-key)
+- [Save your ItsYou.online API key](#api-key)
+- [Save your GitHub PAT](#github-pat)
 - [Test OVC Client](#test-ovc)
 
 <a id="prep"></a>
 ## Prepare
 
+- Get a personal access token on GitHub
 - Create your ItsYou.online user profile
 - Create an API key (application ID + secret) on your ItsYou.online profile
 - Request access to an OpenvCloud account by contacting an OpenvCloud account administrator
@@ -91,7 +93,7 @@ pip install python-jose
 ```
 
 <a id="api-key"></a>
-## Get your API key
+## Save your ItsYou.online API key
 
 Save your API key to environment variables:
 ```bash
@@ -104,10 +106,21 @@ export APP_ID="..."
 export SECRET="..."
 ```
 
-Source the updated `bash_profile`:
+Make sure to source the updated `bash_profile`:
 ```bash
 . ~/.bash_profile
 ```
+
+<a id="github-pat"></a>
+## Save your GitHub PAT
+
+Do the same for your personal access token from GitHub:
+```bash
+export GITHUB_PAT="..."
+```
+
+Again make sure to source the updated bash_profile.
+
 
 <a id="test-ovc"></a>
 ## Test OVC Client
