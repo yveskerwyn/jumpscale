@@ -19,6 +19,7 @@ Steps:
 
 - Get a personal access token on GitHub
 - Create your ItsYou.online user profile
+- Save your SSH public key to your ItsYou.online profile, label it as "default" 
 - Create an API key (application ID + secret) on your ItsYou.online profile
 - Request access to an OpenvCloud account by contacting an OpenvCloud account administrator
 - Logon to the OpenvCloud environment using your ItsYou.online credentials
