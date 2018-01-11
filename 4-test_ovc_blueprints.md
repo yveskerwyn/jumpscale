@@ -2,7 +2,7 @@
 
 First make sure you have added the OpenvCloud templates add to your AYS server:
 ```python
-ays.templates.addTemplates("https://github.com/openvcloud/ays_templates", "master")
+ays.templates.addTemplates("https://github.com/openvcloud/ays_templates", branch)
 ```
 
 (Optionally) create a GitHub repository using your GitHub personal access token:
@@ -14,7 +14,7 @@ github_repo = github.createRepo(test_repo_name, private=False)
 repo_ssh_url = github_repo.ssh_url
 ```
 
-(Optionally) add the SSH key used by the AYS server to GitHub:
+(Optionally) add the SSH key used by the AYS server to GitHub - only required for private repositories:
 ```python
 #ays_pub_key = j.clients.ssh.SSHKeyGetFromAgentPub('/root/.ssh/ays_repos_key')
 ays_pub_key = ays_host.prefab.core.file_read('/root/.ssh/ays_repos_key.pub')

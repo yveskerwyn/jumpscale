@@ -81,7 +81,7 @@ Get the address the public address and the VDC - will be user later:
 public_ip_address = vdc.model["externalnetworkip"]
 ```
 
-Check the portforwards that got created for the host:
+Check the port forwards that got created for the host:
 ```python
 vdc.portforwards
 ```
@@ -113,7 +113,7 @@ ays_host.prefab.system.ssh.authorize("root", pubkey.model["publickey"])
 <a id="install-jumpscale"></a>
 ##  Install JumpScale
 
-Install JumpScale 9.3.0 (master):
+Install JumpScale 9.2.1 (set as value for `branch`):
 ```python
 ays_host.prefab.js9.js9core.install(branch=branch)
 ```
@@ -168,9 +168,10 @@ http://195.143.34.146:5000/apidocs/index.html?raml=api.raml
 
 Optionally - first provision a new VM to host the portal:
 ```python
-portal_host = vdc.machine_create(portal_host_name, "mykey", sizeId=3)
+portal_host = vdc.machine_get(name=portal_host_name, create=True, sshkeyname="mykey", sizeId=3)
 portal_host.prefab.system.ssh.authorize("cloudscalers", pubkey.model["publickey"])
 portal_host.prefab.system.ssh.authorize("root", pubkey.model["publickey"])
+#portal_host.prefab.core.run("apt-get update")
 portal_host.prefab.js9.js9core.install(branch=branch)
 portal_host.prefab.tools.git.pullRepo("https://github.com/Jumpscale/ays9.git", branch=branch)
 ```
@@ -189,7 +190,12 @@ portal_host = vdc.machine_get(portal_host_name)
 
 Execute the following to install JumpScale portal:
 ```python
-portal_host.prefab.web.portal.install(False)
+portal_host.prefab.web.portal.install(start=False, branch=branch)
+```
+
+If the above fails, you might need to execute first the following:
+```python
+portal_host.prefab.core.run("apt-get update")
 ```
 
 This also starts MongoDB (in the same tmux session as AYS server).
@@ -199,9 +205,10 @@ Start AYS Portal:
 portal_host.prefab.web.portal.start()
 ```
 
-Add a port forward for the portal:
+Add a port forward for the portal - just for testing, remove it later once Caddy has been added:
 ```python
 portal_host.portforward_create(80, 8200)
+#portal_host.portforward_delete(80)
 ```
 
 
@@ -213,7 +220,7 @@ Add the AYS Portal "app":
 portal_host.prefab.js9.atyourservice.load_ays_space()
 ```
 
-Stop and start the portal - still needed?:
+Stop and start the portal:
 ```python
 portal_host.prefab.web.portal.stop()
 portal_host.prefab.web.portal.start()
@@ -231,7 +238,7 @@ portal_host.prefab.js9.atyourservice.configure_portal(ays_url=internal_ays_url, 
 ```
 
 The above will:
-- Create and the value of `ays_uri` key in the `[portal.{portal_name}]` section of `jumpscale9.toml`
+- Create and set the value of `ays_uri` key in the `[portal.{portal_name}]` section of `jumpscale9.toml`
 - Update the navigation link the portal (`nav.wiki`) for the AYS API console
 - Automatically restart the portal
 
@@ -252,7 +259,7 @@ Two levels of ItsYou.online integration:
 <a id="iyo-server"></a>
 ### Integrate ItsYou.online into AYS server
 
-Configure the AYS server to only accept http/https requests with a JWT created for the organization created above:
+Configure the AYS server to only accept http/https requests with a JWT created for the organization created above, or for a user who's member of this organization:
 ```python
 ays_host.prefab.js9.atyourservice.configure(production=True, organization=ays_clients_org_name)
 ```
@@ -269,8 +276,6 @@ It basically:
 - If not, it checks if it was created for a user with membership to the `organization`
 - If not, it checks if the `azp` in the JWT is equal to the `organization` - which simply comes down to trusting the portal, who can decide itself to which organization the user needs to be member 
 
-
-We'll probably need to update the above implementation, one of the reasons us that we currently don't check the `aud` field in the JWT, which is against the recommendation about this in https://tools.ietf.org/html/rfc7519#section-4.1.3.
 
 Optionally verify that the configuration was updated:
 ```bash
@@ -370,26 +375,20 @@ ays_clients_org_api_key.update(callback_url=redirect_url)
 <a id="caddy"></a>
 ## Add Caddy
 
-Optionally - delete the Caddy host:
+Get or create the Caddy host:
 ```python
-caddy_host = vdc.machine_get(caddy_host_name)
-caddy_host.delete()
-```
-
-Create the Caddy host:
-```python
-caddy_host = vdc.machine_create(caddy_host_name, "mykey", sizeId=3)
+caddy_host = vdc.machine_get(caddy_host_name, create=True, sshkeyname="mykey", sizeId=3)
 caddy_host.prefab.system.ssh.authorize("cloudscalers", pubkey.model["publickey"])
 caddy_host.prefab.system.ssh.authorize("root", pubkey.model["publickey"])
 ```
 
 Install Caddy:
 ```python
-caddy_host.prefab.web.caddy.install()
+caddy_host.prefab.web.caddy.install(plugins=['git'])
 ```
 
 ```python
-caddy_domain = "ays.vreegoebezig.be"
+caddy_domain = "ays2.vreegoebezig.be"
 tls_email = "yves@vreegoebezig.be"
 portal_internal_ip_address = portal_host.model["nics"][0]["ipAddress"]
 caddy_cfg = """#tcpport:80
