@@ -64,8 +64,8 @@ ssh root@195.134.212.37 -p7122
 Install the Z tools
 ```bash
 export ZUTILSBRANCH=9.2.1
-curl https://raw.githubusercontent.com/Jumpscale/bash/${ZUTILSBRANCH}/install.sh?$RANDOM > /tmp/install.sh;bash
-/tmp/install.sh
+curl https://raw.githubusercontent.com/Jumpscale/bash/${ZUTILSBRANCH}/install.sh?$RANDOM > /tmp/install.sh
+bash /tmp/install.sh
 ```
 
 Source the newly created `bash_profile` file:
