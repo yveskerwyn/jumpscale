@@ -17,9 +17,10 @@ Steps:
 ## Prepare
 
 - Create your ItsYou.online user profile
-- Logon to an OpenvCloud environment using your ItsYou.online credentials
-- Contact an OpenvCloud adminstrator to grant access to an OpenvCloud account
-- Create a "bootstrap" cloud space on be-gen-1
+- Create an API key (application ID + secret) on your ItsYou.online profile
+- Request access to an OpenvCloud account by contacting an OpenvCloud account administrator
+- Logon to the OpenvCloud environment using your ItsYou.online credentials
+- Create a "bootstrap" cloud space using the OpenvCloud account
 - Create a "bootstrap" virtual machine in this "bootstrap" cloud space
 - Create a port forward for port 22 on the "bootstrap" VM
 
@@ -122,5 +123,6 @@ import os
 app_id = os.environ["APP_ID"]
 secret = os.environ["SECRET"]
 ovc_url = "be-gen-1.demo.greenitglobe.com"
+ovc_client = j.clients.openvcloud.get(applicationId=app_id, secret=secret, url=ovc_url)
 ovc_client.accounts
 ```
