@@ -4,6 +4,7 @@ Execute the below steps from an environment with JumpScale 9.2.1 installed, as d
 
 Steps:
 - [Variables](#vars)
+- [Checks](#checks)
 - [Create the host](#create-host)
 - [Authorize your pubic SSH key](#add-key)
 - [Install JumpScale](#install-jumpscale)
@@ -45,6 +46,18 @@ branch = "9.2.1"
 ays_templates_branch="9.2.1"
 caddy_host_name = "caddy"
 ```
+
+<a id="checks"></a>
+##  Checks
+
+Make sure you are using an up to date `9.2.1` branch of all JumpScale repositories:
+```python
+for repo in ["core9", "lib9", "prefab9"]:
+  j.clients.git.getGitBranch(path="/opt/code/github/jumpscale/{}”.format(repo))
+  j.tools.prefab.local.tools.git.pullRepo(url="https://github.com/Jumpscale/{}.git”.format(repo), branch=branch)
+```
+
+
 
 <a id="create-host"></a>
 ##  Create the host
@@ -134,9 +147,10 @@ Start the AYS server:
 ays_host.prefab.js9.atyourservice.start(host="0.0.0.0")
 ```
 
-Add a port forward for the AYS server:
+Add a port forward for the AYS server - to be deleted later what Caddy is added:
 ```python
 ays_host.portforward_create(5000, 5000)
+#ays_host.portforward_delete(5000)
 ```
 
 Test AYS Server:
@@ -207,8 +221,8 @@ portal_host.prefab.web.portal.start()
 
 Add a port forward for the portal - just for testing, remove it later once Caddy has been added:
 ```python
-portal_host.portforward_create(80, 8200)
-#portal_host.portforward_delete(80)
+portal_host.portforward_create(8200, 8200)
+#portal_host.portforward_delete(8200)
 ```
 
 
@@ -399,12 +413,12 @@ http://{0} {{
 
 https://{0} {{
   proxy /api {1}:5000 {{
-      without /api
-      transparent
+    without /api
+    transparent
   }}
 
   proxy /apidocs {1}:5000 {{
-      transparent
+    transparent
   }}
   
   proxy / {2}:8200 {{
@@ -418,12 +432,7 @@ https://{0} {{
 """.format(caddy_domain, internal_ip_address, portal_internal_ip_address, tls_email)
 ```
 
-Port forward
-```python
-caddy_host.portforward_create(443, 443)
-caddy_host.portforward_create(80, 80)
-```
-
+Save the Caddy configuration:
 ```python
 caddy_cfg_path = "/opt/cfg/caddy.cfg"
 caddy_host.prefab.core.file_write(location=caddy_cfg_path, content=caddy_cfg)
@@ -448,10 +457,16 @@ api_console_url = "https://{}/api".format(caddy_domain)
 portal_host.prefab.js9.atyourservice.configure_portal(ays_url=internal_ays_url, ays_console_url="https://{}".format(caddy_domain), portal_name="main")
 ```
 
-NOT NEEDED IF EXECUTED PREVIOUS STEP - Restart the portal:
+Create new port forwards:
 ```python
-portal_host.prefab.web.portal.stop()
-portal_host.prefab.web.portal.start()
+caddy_host.portforward_create(443, 443)
+caddy_host.portforward_create(80, 80)
+```
+
+Remove old port forwards:
+```python
+ays_host.portforward_delete(5000)
+portal_host.portforward_delete(8200)
 ```
 
 Start Caddy:

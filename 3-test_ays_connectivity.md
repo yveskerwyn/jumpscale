@@ -5,7 +5,8 @@ import os
 app_id = os.environ["APP_ID"]
 secret = os.environ["SECRET"]
 
-public_ays_url = "http://185.193.143.74:5000"
+# public_ays_url = "http://185.193.143.74:5000"
+public_ays_url = "https://{}/api".format(caddy_domain)
 
 ays_clients_org_name = "js9portal-mr4"
 api_key_label = "install"
