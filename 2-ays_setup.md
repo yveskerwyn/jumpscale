@@ -1,6 +1,8 @@
-# AYS Setup
+# Remote AYS Setup
 
 Execute the below steps from an environment with JumpScale 9.2.1 installed, as documented in [Bootstrap](1-bootstrap.md).
+
+> It is currently only supported to install AYS server on a virtual machine in another cloud space than the cloud space from which you execute the below steps. IF you need to install AYS on a virtual machine in the same cloud space it is recommended do a local installation, 
 
 Steps:
 - [Variables](#vars)
@@ -34,6 +36,7 @@ account_name = "Account_of_Yves"
 cloud_space_name = "ays-space"
 ays_host_name = "ays-server"
 portal_host_name = "portal"
+external_portal_port = 8200
 pubkey_label = "default"
 test_repo_name = "test_repo"
 test_account_name = "myaccount"
@@ -41,7 +44,8 @@ test_vdc_name = "myvdc"
 test_vm_name = "testvm"
 ays_clients_org_name = "test-ays-server-clients-org"
 api_key_label = "ays-server-api-key"
-portal_users_org_name = "test-ays-portal-users"
+#portal_users_org_name = "test-ays-portal-users"
+portal_users_org_name = ays_clients_org_name
 branch = "9.2.1"
 ays_templates_branch="9.2.1"
 caddy_host_name = "caddy"
@@ -56,8 +60,6 @@ for repo in ["core9", "lib9", "prefab9"]:
   j.clients.git.getGitBranch(path="/opt/code/github/jumpscale/{}”.format(repo))
   j.tools.prefab.local.tools.git.pullRepo(url="https://github.com/Jumpscale/{}.git”.format(repo), branch=branch)
 ```
-
-
 
 <a id="create-host"></a>
 ##  Create the host
@@ -221,8 +223,8 @@ portal_host.prefab.web.portal.start()
 
 Add a port forward for the portal - just for testing, remove it later once Caddy has been added:
 ```python
-portal_host.portforward_create(8200, 8200)
-#portal_host.portforward_delete(8200)
+portal_host.portforward_create(external_portal_port, 8200)
+#portal_host.portforward_delete(external_portal_port)
 ```
 
 
@@ -358,7 +360,7 @@ ays_portal_users_org = iyo_user.organizations.create(portal_users_org_name)
 
 Prepare the callback URL:
 ```python
-redirect_url = "http://{}:{}".format(public_ip_address, 8200)
+redirect_url = "http://{}:{}".format(public_ip_address, external_portal_port)
 ```
 
 Configure `client_id` and `client_secret` that the portal uses the identify itself, and also configure the ItsYou.online `organization` of which portal users need to be member:
@@ -466,7 +468,7 @@ caddy_host.portforward_create(80, 80)
 Remove old port forwards:
 ```python
 ays_host.portforward_delete(5000)
-portal_host.portforward_delete(8200)
+portal_host.portforward_delete(external_portal_port)
 ```
 
 Start Caddy:

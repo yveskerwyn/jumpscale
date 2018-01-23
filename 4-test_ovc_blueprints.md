@@ -5,11 +5,13 @@ First make sure you have added the OpenvCloud templates add to your AYS server:
 ays.templates.addTemplates("https://github.com/openvcloud/ays_templates", branch)
 ```
 
+> You will have to type `yes` in the tmux session of AYS.
+
 (Optionally) create a GitHub repository using your GitHub personal access token:
 ```python
 token = os.environ["GITHUB_PAT"]
-github = j.clients.github.getClient(token)
-github_repo = github.createRepo(test_repo_name, private=False)
+github = j.clients.github.get(token)
+github_repo = github.repo_create(test_repo_name, private=False)
 #github_repo = github.getRepo(test_repo_name)
 repo_ssh_url = github_repo.ssh_url
 ```
