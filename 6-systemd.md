@@ -1,4 +1,4 @@
-# Systemd
+# Systemd Unit Files
 
 ## AYS server
 ```bash
@@ -47,4 +47,14 @@ ExecStart=ulimit -n 8192; /opt/bin/caddy -conf=/opt/cfg/caddy.cfg  -agree
 
 [Install]
 WantedBy=multi-user.target
+```
+
+After having created the above files, have systemd reload its configuration:
+```bash
+sudo systemctl daemon-reload
+```
+
+Enable the services:
+```bash
+sudo systemctl enable ays portal caddy
 ```
