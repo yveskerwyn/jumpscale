@@ -7,3 +7,4 @@ Follow the below steps in order to get started:
 - [Test AYS Connectivity](3-test_ays_connectivity.md)
 - [Test OpenvCloud Blueprints](4-test_ovc_blueprints.md)
 - [Restarting AYS Server](5-restart.md)
+- [Using sytemd](6-systemd.md)

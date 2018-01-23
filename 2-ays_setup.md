@@ -2,7 +2,9 @@
 
 Execute the below steps from an environment with JumpScale 9.2.1 installed, as documented in [Bootstrap](1-bootstrap.md).
 
-> It is currently only supported to install AYS server on a virtual machine in another cloud space than the cloud space from which you execute the below steps. IF you need to install AYS on a virtual machine in the same cloud space it is recommended do a local installation, 
+> It is currently only supported to install AYS server on a virtual machine in another cloud space than the cloud space from which you execute the below steps. IF you need to install AYS on a virtual machine in the same cloud space it is recommended do a local installation.
+
+![](images/setup.png)
 
 Steps:
 - [Variables](#vars)

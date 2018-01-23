@@ -1,0 +1,50 @@
+# Systemd
+
+## AYS server
+```bash
+cat /etc/systemd/system/ays.service
+[Unit]
+Description=At Your Service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+WorkingDirectory=/opt/code/github/jumpscale/ays9
+ExecStart=/usr/bin/python3 main.py --host 127.0.0.1 --port 5000 --log info
+
+[Install]
+WantedBy=multi-user.target
+```
+
+## AYS Portal
+```bash
+cat /etc/systemd/system/portal.service
+[Unit]
+Description=At Your Service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+WorkingDirectory=/opt/jumpscale9/apps/portals/main 
+ExecStart=/usr/bin/python3 portal_start.py --instance main
+
+[Install]
+WantedBy=multi-user.target
+```
+
+## Caddy
+
+```bash
+cat /etc/systemd/system/caddy.service
+[Unit]
+Description=At Your Service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+WorkingDirectory=/opt/code/github/jumpscale/ays9
+ExecStart=/usr/bin/python3 main.py --host 127.0.0.1 --port 5000 --log info
+
+[Install]
+WantedBy=multi-user.target
+```
