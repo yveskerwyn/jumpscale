@@ -42,7 +42,7 @@ Wants=network-online.target
 After=network-online.target
 
 [Service]
-WorkingDirectory=/opt/code/github/jumpscale/ays9
+WorkingDirectory=/opt/bin/caddy
 ExecStart=ulimit -n 8192; /opt/bin/caddy -conf=/opt/cfg/caddy.cfg  -agree
 
 [Install]
