@@ -49,12 +49,14 @@ ExecStart=/bin/bash -a -c 'ulimit -n 8192;/opt/bin/caddy -conf=/opt/cfg/caddy.cf
 WantedBy=multi-user.target
 ```
 
-After having created the above files, have systemd reload its configuration:
-```bash
-sudo systemctl daemon-reload
-```
-
-Enable the services:
+After having created the above files, have systemd enable them:
 ```bash
 sudo systemctl enable ays portal caddy
+```
+
+Start the services:
+```bash
+sudo systemctl start ays.service
+sudo systemctl start portal.service
+sudo systemctl start caddy.service
 ```
