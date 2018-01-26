@@ -10,7 +10,7 @@ After=network-online.target
 
 [Service]
 WorkingDirectory=/opt/code/github/jumpscale/ays9
-ExecStart=/usr/bin/python3 main.py --host 127.0.0.1 --port 5000 --log info
+ExecStart=/usr/bin/sudo /bin/bash -a -c 'source /root/.bash_profile && /usr/bin/env /usr/bin/python3 main.py --host 127.0.0.1 --port 5000 --log info'
 
 [Install]
 WantedBy=multi-user.target
@@ -25,8 +25,8 @@ Wants=network-online.target
 After=network-online.target
 
 [Service]
-WorkingDirectory=/opt/jumpscale9/apps/portals/main 
-ExecStart=/usr/bin/python3 portal_start.py --instance main
+WorkingDirectory=/opt/jumpscale9/apps/portals/main
+ExecStart=/usr/bin/sudo /bin/bash -a -c 'source /root/.bash_profile && /usr/bin/env /usr/bin/python3  portal_start.py --instance main'
 
 [Install]
 WantedBy=multi-user.target
@@ -42,8 +42,8 @@ Wants=network-online.target
 After=network-online.target
 
 [Service]
-WorkingDirectory=/opt/bin/caddy
-ExecStart=ulimit -n 8192; /opt/bin/caddy -conf=/opt/cfg/caddy.cfg  -agree
+WorkingDirectory=/
+ExecStart=/bin/bash -a -c 'ulimit -n 8192;/opt/bin/caddy -conf=/opt/cfg/caddy.cfg  -agree'
 
 [Install]
 WantedBy=multi-user.target
