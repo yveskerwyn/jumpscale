@@ -1,8 +1,22 @@
 # Test OpenvCloud Blueprints
 
+Make sure you have a working connection to your AYS Server, see [Test AYS Connectivity](3-test_ays_connectivity.md) for details.
+
+Variables:
+```python
+import yaml
+ovc_templates_branch = "9.2.1"
+test_repo_name="4sergey"
+ovc_url = "be-gen-1.demo.greenitglobe.com
+test_account_name = "Account_of_Yves"
+location = "be-gen-1"
+test_vdc_name = "test-vdc"
+test_vm_name = "test-vm"
+```
+
 First make sure you have added the OpenvCloud templates add to your AYS server:
 ```python
-ays.templates.addTemplates("https://github.com/openvcloud/ays_templates", branch)
+ays.templates.addTemplates(repo_url="https://github.com/openvcloud/ays_templates", branch=ovc_templates_branch)
 ```
 
 > You will have to type `yes` in the tmux session of AYS.

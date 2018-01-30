@@ -1,6 +1,6 @@
 # Remote AYS Setup
 
-Execute the below steps from an environment with JumpScale 9.2.1 installed, as documented in [Bootstrap](1-bootstrap.md).
+Execute the below steps from a remote machine with JumpScale 9.2.1 installed, as documented in [Bootstrap](1-bootstrap.md).
 
 > It is currently only supported to install AYS server on a virtual machine in another cloud space than the cloud space from which you execute the below steps. IF you need to install AYS on a virtual machine in the same cloud space it is recommended do a local installation.
 
@@ -256,9 +256,11 @@ portal_host.prefab.js9.atyourservice.configure_portal(ays_url=internal_ays_url, 
 ```
 
 The above will:
-- Create and set the value of `ays_uri` key in the `[portal.{portal_name}]` section of `jumpscale9.toml`
+- Create and set the value of the `ays_uri` key in the `[portal.{portal_name}]` section of `jumpscale9.toml`
 - Update the navigation link the portal (`nav.wiki`) for the AYS API console
 - Automatically restart the portal
+
+> Note that value set for `ays_url` needs to use the internal IP address of the AYS server, while the value set for `ays_console_url` needs to use the external IP address of the AYS server.
 
 
 <a id="add-iyo"></a>
@@ -370,7 +372,7 @@ Configure `client_id` and `client_secret` that the portal uses the identify itse
 portal_host.prefab.web.portal.configure(mongodbip='127.0.0.1', mongoport=27017, production=True, client_id=ays_clients_org_name, client_secret=ays_clients_org_secret, scope_organization=portal_users_org_name, redirect_address=redirect_url)
 ```
 
-> Note: The values set for `client_id` and `client_secret` are only used by the portal to authenticate itself when authenticating portal users (authorization code grant flow), when the portal consumes the AYS server RESTful API it forwards JWT from the user; so the portal doesn't create a JWT based on the client_id and secret
+> Note: The values set for `client_id` and `client_secret` are only used by the portal to authenticate itself when authenticating portal users (authorization code grant flow). When the portal consumes the AYS server RESTful API it forwards the JWT from the user; so the portal doesn't create a JWT based on the client_id and secret.
 
 > Also note that `client_id` and `client_secret` are ignored when production = FALSE
 
