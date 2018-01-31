@@ -10,7 +10,7 @@ Steps:
 - [Variables](#vars)
 - [Checks](#checks)
 - [Create the host](#create-host)
-- [Authorize your pubic SSH key](#add-key)
+- [Authorize your public SSH key](#add-key)
 - [Install JumpScale](#install-jumpscale)
 - [Install AYS Server](#install-ays)
 - [Start and test the AYS server](#start-ays)
@@ -104,7 +104,7 @@ vdc.portforwards
 ```
 
 <a id="add-key"></a>
-## Authorize your pubic SSH key
+## Authorize your public SSH key
 
 Get an ItsYou.online client object for your profile:
 ```python
