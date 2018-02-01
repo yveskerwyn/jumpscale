@@ -1,8 +1,10 @@
 # Bootstrap
 
-The below steps document how to install JumpScale 9.2.1 on a virtual machine on an OpenvCloud.
+The below steps document how to install JumpScale 9.2.1 on a virtual machine in an OpenvCloud environment.
 
-From this virtual machine you will then be able to create an AYS server on another virtual machine residing in another cloud space, as documented in [Remote AYS Setup](2-ays_setup.md).
+Once you have this machine you have two options:
+- [Install AYS Server locally on this machine](local_ays_setup.md)
+- [Install AYS Server on a remote machine, residing in another cloud space](remote_ays_setup.md)
 
 Steps:
 - [Prepare](#prep)

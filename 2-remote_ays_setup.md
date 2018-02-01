@@ -1,8 +1,8 @@
 # Remote AYS Setup
 
-Execute the below steps from a remote machine with JumpScale 9.2.1 installed, as documented in [Bootstrap](1-bootstrap.md).
+Execute the below steps from a machine with JumpScale 9.2.1 installed, as documented in [Bootstrap](1-bootstrap.md).
 
-> It is currently only supported to install AYS server on a virtual machine in another cloud space than the cloud space from which you execute the below steps. IF you need to install AYS on a virtual machine in the same cloud space it is recommended do a local installation.
+> It is currently only supported to install AYS server on a virtual machine in another cloud space than the cloud space from which you execute the below steps. If you need to install AYS on a virtual machine in the same cloud space it is recommended do a local installation.
 
 ![](images/setup.png)
 
@@ -39,6 +39,7 @@ cloud_space_name = "ays-space"
 ays_host_name = "ays-server"
 portal_host_name = "portal"
 external_portal_port = 8200
+external_ays_port = 5000
 pubkey_label = "default"
 test_repo_name = "test_repo"
 test_account_name = "myaccount"
@@ -68,13 +69,13 @@ for repo in ["core9", "lib9", "prefab9"]:
 
 Access your OVC account:
 ```python
-ovc_client = j.clients.openvcloud.get(app_id, secret, ovc_url)
-account = ovc_client.account_get(account_name, create=False) 
+ovc_client = j.clients.openvcloud.get(applicationId=app_id, secret=secret, url=ovc_url)
+account = ovc_client.account_get(name=account_name, create=False) 
 ```
 
 Get or create the VDC:
 ```python
-vdc = account.space_get(cloud_space_name, location)
+vdc = account.space_get(name=cloud_space_name, location=location)
 ```
 
 Make sure "mykey" is loaded:
@@ -93,7 +94,7 @@ Get the internal IP address of the VM - will be used later:
 internal_ip_address = ays_host.model["nics"][0]["ipAddress"]
 ```
 
-Get the address the public address and the VDC - will be user later:
+Get the public IP address and the VDC - will be user later:
 ```python
 public_ip_address = vdc.model["externalnetworkip"]
 ```
@@ -153,13 +154,12 @@ ays_host.prefab.js9.atyourservice.start(host="0.0.0.0")
 
 Add a port forward for the AYS server - to be deleted later what Caddy is added:
 ```python
-ays_host.portforward_create(5000, 5000)
-#ays_host.portforward_delete(5000)
+ays_host.portforward_create(publicport=external_ays_port, localport=5000)
 ```
 
 Test AYS Server:
 ```python
-public_ays_url = "http://{}:{}".format(public_ip_address, "5000")
+public_ays_url = "http://{}:{}".format(public_ip_address, external_ays_port)
 ays = j.clients.ays.get(public_ays_url)
 ays.repositories.list()
 ```
@@ -172,7 +172,7 @@ Configure the AYS API Console:
 ays_host.prefab.js9.atyourservice.configure_api_console(url=public_ays_url)
 ```
 
-This will update the value of `baseUri` in `JumpScale9AYS/ays/server/apidocs/api.raml`; make sure to use the public IP address here.
+This will update the value of `baseUri` in `/opt/code/github/jumpscale/ays9/JumpScale9AYS/ays/server/apidocs/api.raml`; make sure you have used the public IP address here.
 
 Test the AYS API Console in your browser by visiting:
 http://<public_ip_address>:5000/apidocs/index.html?raml=api.raml
@@ -203,7 +203,7 @@ portal_host = ays_host
 
 Or use an existing portal host:
 ```python
-portal_host = vdc.machine_get(portal_host_name)
+portal_host = vdc.machine_get(name=portal_host_name)
 ```
 
 Execute the following to install JumpScale portal:
@@ -216,17 +216,16 @@ If the above fails, you might need to execute first the following:
 portal_host.prefab.core.run("apt-get update")
 ```
 
-This also starts MongoDB (in the same tmux session as AYS server).
-
 Start AYS Portal:
 ```python
 portal_host.prefab.web.portal.start()
 ```
 
+This also starts MongoDB (in the same tmux session as AYS server).
+
 Add a port forward for the portal - just for testing, remove it later once Caddy has been added:
 ```python
-portal_host.portforward_create(external_portal_port, 8200)
-#portal_host.portforward_delete(external_portal_port)
+portal_host.portforward_create(publicport=external_portal_port, localport=8200)
 ```
 
 
@@ -268,8 +267,8 @@ The above will:
 
 If not already done so, make sure the "ays-server-clients-org" organization was created, with an API access key:
 ```python
-ays_clients_org = iyo_user.organizations.create(ays_clients_org_name)
-ays_clients_org_api_key = ays_clients_org.api_keys.add(api_key_label, client_credentials_grant_type=True)
+ays_clients_org = iyo_user.organizations.create(name=ays_clients_org_name)
+ays_clients_org_api_key = ays_clients_org.api_keys.add(label=api_key_label, client_credentials_grant_type=True)
 ```
 
 Two levels of ItsYou.online integration:
@@ -321,20 +320,20 @@ ays_host.prefab.js9.atyourservice.start(host="0.0.0.0")
 
 In order to test is, first get the API access key secret:
 ```python
-ays_clients_org = iyo_user.organizations.get(ays_clients_org_name)
-ays_clients_org_api_key = ays_clients_org.api_keys.get(api_key_label)
+ays_clients_org = iyo_user.organizations.get(global_id=ays_clients_org_name)
+ays_clients_org_api_key = ays_clients_org.api_keys.get(label=api_key_label)
 ays_clients_org_secret = ays_clients_org_api_key.model["secret"]
 ```
 
 Re-test AYS Server with ItsYou.online integration active:
 ```python
-ays = j.clients.ays.get(public_ays_url, ays_clients_org_name, ays_clients_org_secret)
+ays = j.clients.ays.get(url=public_ays_url, client_id=ays_clients_org_name, client_secret=ays_clients_org_secret)
 ays.repositories.list()
 ```
 
 In order to also test the AYS API Console with ItsYou.online integration, let's first get a JWT, using the IYO client:
 ```python
-jwt = j.clients.itsyouonline.get_jwt(ays_clients_org_name, ays_clients_org_secret)
+jwt = j.clients.itsyouonline.get_jwt(client_idd=ays_clients_org_name, secret=ays_clients_org_secret)
 ```
 
 OR - using the AYS client:
@@ -359,7 +358,7 @@ Authentication: Bearer $jwt
 
 If not already done, create the ItsYou.online organization where the portal users need to be member:
 ```python
-ays_portal_users_org = iyo_user.organizations.create(portal_users_org_name)
+ays_portal_users_org = iyo_user.organizations.create(name=portal_users_org_name)
 ```
 
 Prepare the callback URL:
@@ -367,7 +366,7 @@ Prepare the callback URL:
 redirect_url = "http://{}:{}".format(public_ip_address, external_portal_port)
 ```
 
-Configure `client_id` and `client_secret` that the portal uses the identify itself, and also configure the ItsYou.online `organization` of which portal users need to be member:
+Configure `client_id` and `client_secret` that the portal uses to identify itself, and also configure the ItsYou.online `organization` of which portal users need to be member:
 ```python
 portal_host.prefab.web.portal.configure(mongodbip='127.0.0.1', mongoport=27017, production=True, client_id=ays_clients_org_name, client_secret=ays_clients_org_secret, scope_organization=portal_users_org_name, redirect_address=redirect_url)
 ```
@@ -397,7 +396,7 @@ ays_clients_org_api_key.update(callback_url=redirect_url)
 
 Get or create the Caddy host:
 ```python
-caddy_host = vdc.machine_get(caddy_host_name, create=True, sshkeyname="mykey", sizeId=3)
+caddy_host = vdc.machine_get(name=caddy_host_name, create=True, sshkeyname="mykey", sizeId=3)
 caddy_host.prefab.system.ssh.authorize("cloudscalers", pubkey.model["publickey"])
 caddy_host.prefab.system.ssh.authorize("root", pubkey.model["publickey"])
 ```
@@ -465,26 +464,25 @@ portal_host.prefab.js9.atyourservice.configure_portal(ays_url=internal_ays_url, 
 
 Create new port forwards:
 ```python
-caddy_host.portforward_create(443, 443)
-caddy_host.portforward_create(80, 80)
+caddy_host.portforward_create(publicport=443, localport=443)
+caddy_host.portforward_create(publicport=80, localport=80)
 ```
 
 Remove old port forwards:
 ```python
-ays_host.portforward_delete(5000)
-portal_host.portforward_delete(external_portal_port)
+ays_host.portforward_delete(publicport=external_portal_port)
+ays_host.portforward_delete(publicport=external_ays_port)
 ```
 
 Start Caddy:
 ```python
 #caddy_host.prefab.web.caddy.stop()
-caddy_host.prefab.web.caddy.start()
+j.tools.prefab.local.web.caddy.start()
 ```
 
-Test AYS:
+Test AYS again:
 ```python
-#public_ays_url = "http://{}:5000".format(public_ip_address)
 public_ays_url = "https://{}/api".format(caddy_domain)
-ays = j.clients.ays.get(public_ays_url, ays_clients_org_name, ays_clients_org_secret)
+ays = j.clients.ays.get(url=public_ays_url, client_id=ays_clients_org_name, client_secret=ays_clients_org_secret)
 ays.repositories.list()
 ```
