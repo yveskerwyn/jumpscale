@@ -31,7 +31,8 @@ import yaml
 app_id = os.environ["APP_ID"]
 secret = os.environ["SECRET"]
 git_token = os.environ["GITHUB_PAT"]
-key_path = os.path.expanduser("~/.ssh/mykey")
+ssh_key_name = "mykey"
+key_path = os.path.expanduser("~/.ssh/{}".format(ssh_key_name))
 ovc_url = "be-gen-1.demo.greenitglobe.com"
 location = "be-gen-1"
 account_name = "Account_of_Yves"
@@ -41,16 +42,12 @@ portal_host_name = "portal"
 external_portal_port = 8200
 external_ays_port = 5000
 pubkey_label = "default"
-test_repo_name = "test_repo"
-test_account_name = "myaccount"
-test_vdc_name = "myvdc"
-test_vm_name = "testvm"
+
 ays_clients_org_name = "test-ays-server-clients-org"
 api_key_label = "ays-server-api-key"
 #portal_users_org_name = "test-ays-portal-users"
 portal_users_org_name = ays_clients_org_name
 branch = "9.2.1"
-ays_templates_branch="9.2.1"
 caddy_host_name = "caddy"
 ```
 
@@ -60,8 +57,8 @@ caddy_host_name = "caddy"
 Make sure you are using an up to date `9.2.1` branch of all JumpScale repositories:
 ```python
 for repo in ["core9", "lib9", "prefab9"]:
-  j.clients.git.getGitBranch(path="/opt/code/github/jumpscale/{}”.format(repo))
-  j.tools.prefab.local.tools.git.pullRepo(url="https://github.com/Jumpscale/{}.git”.format(repo), branch=branch)
+  j.clients.git.getGitBranch(path="/opt/code/github/jumpscale/{}".format(repo))
+  j.tools.prefab.local.tools.git.pullRepo(url="https://github.com/Jumpscale/{}.git".format(repo), branch=branch)
 ```
 
 <a id="create-host"></a>
@@ -86,7 +83,7 @@ j.clients.ssh.load_ssh_key(path=key_path, create_keys=True)
 
 If not yet created, create the host:
 ```python
-ays_host = vdc.machine_get(name=ays_host_name, create=True, sshkeyname="mykey", sizeId=3)
+ays_host = vdc.machine_get(name=ays_host_name, create=True, sshkeyname=ssh_key_name, sizeId=3)
 ```
 
 Get the internal IP address of the VM - will be used later:
@@ -172,13 +169,10 @@ Configure the AYS API Console:
 ays_host.prefab.js9.atyourservice.configure_api_console(url=public_ays_url)
 ```
 
-This will update the value of `baseUri` in `/opt/code/github/jumpscale/ays9/JumpScale9AYS/ays/server/apidocs/api.raml`; make sure you have used the public IP address here.
+This will update the value of the `baseUri` key in `/opt/code/github/jumpscale/ays9/JumpScale9AYS/ays/server/apidocs/api.raml`; make sure you have used the public IP address here.
 
 Test the AYS API Console in your browser by visiting:
 http://<public_ip_address>:5000/apidocs/index.html?raml=api.raml
-
-#http://195.143.34.145:5000/apidocs/index.html?raml=api.raml
-http://195.143.34.146:5000/apidocs/index.html?raml=api.raml
 
 
 <a id="add-portal"></a>
@@ -186,7 +180,7 @@ http://195.143.34.146:5000/apidocs/index.html?raml=api.raml
 
 Optionally - first provision a new VM to host the portal:
 ```python
-portal_host = vdc.machine_get(name=portal_host_name, create=True, sshkeyname="mykey", sizeId=3)
+portal_host = vdc.machine_get(name=portal_host_name, create=True, sshkeyname=ssh_key_name, sizeId=3)
 portal_host.prefab.system.ssh.authorize("cloudscalers", pubkey.model["publickey"])
 portal_host.prefab.system.ssh.authorize("root", pubkey.model["publickey"])
 #portal_host.prefab.core.run("apt-get update")
@@ -194,7 +188,7 @@ portal_host.prefab.js9.js9core.install(branch=branch)
 portal_host.prefab.tools.git.pullRepo("https://github.com/Jumpscale/ays9.git", branch=branch)
 ```
 
-In the last command above we also clone the ays9 repository because of some file dependencies.
+In the last command here above we also clone the ays9 repository because of some file dependencies.
 
 Or use the same host:
 ```python
@@ -271,6 +265,12 @@ ays_clients_org = iyo_user.organizations.create(name=ays_clients_org_name)
 ays_clients_org_api_key = ays_clients_org.api_keys.add(label=api_key_label, client_credentials_grant_type=True)
 ```
 
+Or in case the organization already exists:
+```python
+ays_clients_org = iyo_user.organizations.get(global_id=ays_clients_org_name)
+ays_clients_org_api_key = ays_clients_org.api_keys.get(label=api_key_label)
+```
+
 Two levels of ItsYou.online integration:
 - [Integrate ItsYou.online into AYS server](#iyo-server)
 - [Integrate ItsYou.online into AYS portal](#iyo-portal)
@@ -331,9 +331,16 @@ ays = j.clients.ays.get(url=public_ays_url, client_id=ays_clients_org_name, clie
 ays.repositories.list()
 ```
 
-In order to also test the AYS API Console with ItsYou.online integration, let's first get a JWT, using the IYO client:
+Alternatively you can also test the AYS server using a personal API access key (`app_id` and `secret`). In that case you first need to obtain a JWT from ItsYou.online confirming you are owner or member of the ItsYou.online organization:
 ```python
-jwt = j.clients.itsyouonline.get_jwt(client_idd=ays_clients_org_name, secret=ays_clients_org_secret)
+scope = 'user:memberof:{}'.format(ays_clients_org_name)
+jwt = j.clients.itsyouonline.get_jwt(client_id=app_id, secret=secret, scope=scope)
+```
+
+With this JWT you can then connect to the AYS server and list the repositories:
+```python
+ays = j.clients.ays.get_with_jwt(url=public_ays_url, jwt=jwt)
+ays.repositories.list()
 ```
 
 OR - using the AYS client:
@@ -361,6 +368,11 @@ If not already done, create the ItsYou.online organization where the portal user
 ays_portal_users_org = iyo_user.organizations.create(name=portal_users_org_name)
 ```
 
+Or if this organization already exits:
+```python
+ays_portal_users_org = iyo_user.organizations.get(global_id=portal_users_org_name)
+```
+
 Prepare the callback URL:
 ```python
 redirect_url = "http://{}:{}".format(public_ip_address, external_portal_port)
@@ -386,7 +398,7 @@ portal_host.prefab.web.portal.stop()
 portal_host.prefab.web.portal.start()
 ```
 
-Also update redirect url in ItsYou.online:
+Also update the redirect url in ItsYou.online:
 ```python
 ays_clients_org_api_key.update(callback_url=redirect_url)
 ```
@@ -396,7 +408,7 @@ ays_clients_org_api_key.update(callback_url=redirect_url)
 
 Get or create the Caddy host:
 ```python
-caddy_host = vdc.machine_get(name=caddy_host_name, create=True, sshkeyname="mykey", sizeId=3)
+caddy_host = vdc.machine_get(name=caddy_host_name, create=True, sshkeyname=ssh_key_name, sizeId=3)
 caddy_host.prefab.system.ssh.authorize("cloudscalers", pubkey.model["publickey"])
 caddy_host.prefab.system.ssh.authorize("root", pubkey.model["publickey"])
 ```
@@ -470,14 +482,13 @@ caddy_host.portforward_create(publicport=80, localport=80)
 
 Remove old port forwards:
 ```python
-ays_host.portforward_delete(publicport=external_portal_port)
+portal_host.portforward_delete(publicport=external_portal_port)
 ays_host.portforward_delete(publicport=external_ays_port)
 ```
 
 Start Caddy:
 ```python
-#caddy_host.prefab.web.caddy.stop()
-j.tools.prefab.local.web.caddy.start()
+caddy_host.prefab.web.caddy.start()
 ```
 
 Test AYS again:

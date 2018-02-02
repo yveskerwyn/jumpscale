@@ -25,7 +25,7 @@ ays.templates.addTemplates(repo_url="https://github.com/openvcloud/ays_templates
 ```python
 token = os.environ["GITHUB_PAT"]
 github = j.clients.github.get(token)
-github_repo = github.repo_create(test_repo_name, private=False)
+github_repo = github.repo_create(token=test_repo_name, private=False)
 #github_repo = github.getRepo(test_repo_name)
 repo_ssh_url = github_repo.ssh_url
 ```
@@ -35,17 +35,17 @@ repo_ssh_url = github_repo.ssh_url
 #ays_pub_key = j.clients.ssh.SSHKeyGetFromAgentPub('/root/.ssh/ays_repos_key')
 ays_pub_key = ays_host.prefab.core.file_read('/root/.ssh/ays_repos_key.pub')
 user = github.api.get_user()
-user.create_key("ays", ays_pub_key)
+user.create_key(title="ays", key=ays_pub_key)
 ```
 
 Create a repository:
 ```python
-ays_repo = ays.repositories.create(test_repo_name, repo_ssh_url)
+ays_repo = ays.repositories.create(name=test_repo_name, git=repo_ssh_url)
 ```
 
 Get a JWT to pass in the blueprint in order to access the OpenvCloud Cloud API:
 ```python
-jwt = j.clients.itsyouonline.get_jwt(app_id, secret)
+jwt = j.clients.itsyouonline.get_jwt(client_id=app_id, secret=secret)
 ```
 
 Prepare a blueprint for each AYS service definition:

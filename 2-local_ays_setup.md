@@ -207,6 +207,12 @@ ays_clients_org = iyo_user.organizations.create(name=ays_clients_org_name)
 ays_clients_org_api_key = ays_clients_org.api_keys.add(label=api_key_label, client_credentials_grant_type=True)
 ```
 
+Or in case the organization already exists:
+```python
+ays_clients_org = iyo_user.organizations.get(global_id=ays_clients_org_name)
+ays_clients_org_api_key = ays_clients_org.api_keys.get(label=api_key_label)
+```
+
 Two levels of ItsYou.online integration:
 - [Integrate ItsYou.online into AYS server](#iyo-server)
 - [Integrate ItsYou.online into AYS portal](#iyo-portal)
@@ -301,6 +307,11 @@ If not already done, create the ItsYou.online organization where the portal user
 ays_portal_users_org = iyo_user.organizations.create(name=portal_users_org_name)
 ```
 
+Or if this organization already exits:
+```python
+ays_portal_users_org = iyo_user.organizations.get(global_id=portal_users_org_name)
+```
+
 Prepare the callback URL:
 ```python
 redirect_url = "http://{}:{}".format(public_ip_address, external_portal_port)
@@ -326,7 +337,7 @@ j.tools.prefab.local.web.portal.stop()
 j.tools.prefab.local.web.portal.start()
 ```
 
-Also update redirect url in ItsYou.online:
+Also update the redirect url in ItsYou.online:
 ```python
 ays_clients_org_api_key.update(callback_url=redirect_url)
 ```
@@ -402,8 +413,8 @@ ays_host.portforward_create(publicport=80, localport=80)
 
 Remove old port forwards:
 ```python
-ays_host.portforward_delete(publicport=external_portal_port)
-ays_host.portforward_delete(publicport=external_porta_port)
+portal_host.portforward_delete(publicport=external_portal_port)
+ays_host.portforward_delete(publicport=external_ays_port)
 ```
 
 Start Caddy:
