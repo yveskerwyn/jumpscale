@@ -7,7 +7,7 @@ Variables:
 import yaml
 ovc_templates_branch = "9.2.1"
 test_repo_name="4sergey"
-ovc_url = "be-gen-1.demo.greenitglobe.com
+ovc_url = "be-gen-1.demo.greenitglobe.com"
 test_account_name = "Account_of_Yves"
 location = "be-gen-1"
 test_vdc_name = "test-vdc"

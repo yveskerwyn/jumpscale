@@ -19,7 +19,7 @@ ays = j.clients.ays.get(url=public_ays_url, client_id=ays_clients_org_name, clie
 
 # Or connect using a JWT for a user that is member of the IYO organization instead:
 scope = 'user:memberof:{}'.format(ays_clients_org_name)
-jwt = j.clients.itsyouonline.get_jwt(client_id=app_id, client_secret=secret, scope=scope)
+jwt = j.clients.itsyouonline.get_jwt(client_id=app_id, secret=secret, scope=scope)
 ays = j.clients.ays.get_with_jwt(url=public_ays_url, jwt=jwt)
 ays.repositories.list()
 ```

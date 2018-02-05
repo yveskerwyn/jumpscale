@@ -161,6 +161,8 @@ ays = j.clients.ays.get(public_ays_url)
 ays.repositories.list()
 ```
 
+> Note: on the AYS server host you can test the AYS server using the AYS command line tool, which requires at a version of psutils higher or equal to 5.2.2, in order to install it execute `pip install psutil==5.2.2` at the command line.
+
 <a id="api-console"></a>
 ## Add the AYS API console
 
