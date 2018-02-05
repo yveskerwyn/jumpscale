@@ -15,6 +15,7 @@ Full list: https://github.com/Jumpscale/prefab9/issues?q=is%3Aopen+is%3Aissue+la
 
 Full lists: https://github.com/Jumpscale/ays9/issues?q=is%3Aopen+is%3Aissue+label%3Atype_bug
 
+- [Unable to get the auto-push to work with Gitea (#415)](https://github.com/Jumpscale/ays9/issues/415)
 - [Unable to delete a repository from the AYS Portal app (#414)](https://github.com/Jumpscale/ays9/issues/414)
 - [The 'psutil>=5.2.2' distribution was not found (#399)](https://github.com/Jumpscale/ays9/issues/399)
 - [AYS requires a restart to in order to re-execute a run succesfully, after destroying the repo (#396)](https://github.com/Jumpscale/ays9/issues/396)
