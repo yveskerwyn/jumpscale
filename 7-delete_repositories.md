@@ -14,6 +14,7 @@ ays_clients_org_name = "ays-organizations.ch-gen-1-artilium"
 scope = 'user:memberof:{}'.format(ays_clients_org_name)
 jwt = j.clients.itsyouonline.get_jwt(client_id=app_id, secret=secret, scope=scope)
 ays = j.clients.ays.get_with_jwt(url=public_ays_url, jwt=jwt)
+ays.repositories.list()
 ```
 
 The go through the list of all known AYS repositories and delete them:
