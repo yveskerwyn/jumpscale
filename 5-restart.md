@@ -47,14 +47,15 @@ caddy_host_name = "caddy"
 
 Connect to the cloud space using the JumpScale client for OpenvCloud:
 ```python
-ovc_client = j.clients.openvcloud.get(app_id, secret, ovc_url)
-account = ovc_client.account_get(account_name, create=False) 
-vdc = account.space_get(cloud_space_name, location)
+ovc_client = j.clients.openvcloud.get(applicationId=app_id, secret=secret, url=ovc_url)
+account = ovc_client.account_get(name=account_name, create=False) 
+vdc = account.space_get(name=cloud_space_name, location=location, create=False)
 ```
 
 Make sure you have private SSH key loaded that was used to setup the hosts:
 ```python
-key_path = os.path.expanduser("~/.ssh/mykey")
+ssh_key_name = "mykey"
+key_path = os.path.expanduser("~/.ssh/{}".format(ssh_key_name))
 j.clients.ssh.load_ssh_key(path=key_path, create_keys=True)
 j.clients.ssh.ssh_keys_list_from_agent()
 ```

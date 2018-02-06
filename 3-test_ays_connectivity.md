@@ -4,10 +4,10 @@
 import os
 app_id = os.environ["APP_ID"]
 secret = os.environ["SECRET"]
-
+caddy_domain = "ays.vreegoebezig.be"
 public_ays_url = "https://{}/api".format(caddy_domain)
 
-ays_clients_org_name = "js9portal-mr4"
+ays_clients_org_name = "ays-server-clients-org"
 api_key_label = "install"
 
 # Connect with a JWT using the API key set for the IYO organization:
