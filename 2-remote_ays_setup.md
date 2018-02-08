@@ -13,7 +13,9 @@ Steps:
 - [Authorize your public SSH key](#add-key)
 - [Install JumpScale](#install-jumpscale)
 - [Install AYS Server](#install-ays)
-- [Start and test the AYS server](#start-ays)
+- [Start AYS server](#start-ays)
+- [Test AYS using the JumpScale client for AYS](#test-ays)
+- [Test AYS using the AYS command line tool](#ays-cli-test)
 - [Add the AYS API console](#api-console)
 - [Add JumpScale Portal](#add-portal)
 - [Add the AYS Portal App](#add-cockpit)
@@ -154,6 +156,9 @@ Add a port forward for the AYS server - to be deleted later what Caddy is added:
 ays_host.portforward_create(publicport=external_ays_port, localport=5000)
 ```
 
+<a id="test-ays"></a>
+## Test AYS using the JumpScale client for AYS
+
 Test AYS Server:
 ```python
 public_ays_url = "http://{}:{}".format(public_ip_address, external_ays_port)
@@ -161,7 +166,22 @@ ays = j.clients.ays.get(public_ays_url)
 ays.repositories.list()
 ```
 
-> Note: on the AYS server host you can test the AYS server using the AYS command line tool, which requires at a version of psutils higher or equal to 5.2.2, in order to install it execute `pip install psutil==5.2.2` at the command line.
+<a id="ays-cli-test"></a>
+## Test AYS using the AYS command line tool
+
+First fix a missing dependency:
+```python
+ays_host.prefab..core.run("pip install psutil==5.2.2")
+```
+
+This will allow you to list all repositories using the AYS command line tool:
+```bash
+CTRL+Z
+ssh root@<public_ip_address> -p2200
+ays repo list
+exit
+fg
+```
 
 <a id="api-console"></a>
 ## Add the AYS API console

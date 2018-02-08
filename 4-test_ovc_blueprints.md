@@ -12,6 +12,7 @@ test_account_name = "Account_of_Yves"
 location = "be-gen-1"
 test_vdc_name = "test-vdc"
 test_vm_name = "test-vm"
+ays_server_key_title = "ays_key"
 ```
 
 First make sure you have added the OpenvCloud templates add to your AYS server:
@@ -23,8 +24,8 @@ ays.templates.addTemplates(repo_url="https://github.com/openvcloud/ays_templates
 
 (Optionally) create a GitHub repository using your GitHub personal access token:
 ```python
-token = os.environ["GITHUB_PAT"]
-github = j.clients.github.get(token)
+github_pat = os.environ["GITHUB_PAT"]
+github = j.clients.github.get(login_or_token=github_pat)
 github_repo = github.repo_create(token=test_repo_name, private=False)
 #github_repo = github.getRepo(test_repo_name)
 repo_ssh_url = github_repo.ssh_url
@@ -34,8 +35,17 @@ repo_ssh_url = github_repo.ssh_url
 ```python
 #ays_pub_key = j.clients.ssh.SSHKeyGetFromAgentPub('/root/.ssh/ays_repos_key')
 ays_pub_key = ays_host.prefab.core.file_read('/root/.ssh/ays_repos_key.pub')
-user = github.api.get_user()
-user.create_key(title="ays", key=ays_pub_key)
+github_user = github.api.get_user()
+github_user.create_key(title=ays_server_key_title, key=ays_pub_key)
+```
+
+Or in case you use Gitea:
+```python
+gitea_url = "https://docs.greenitglobe.com"
+gitea_pat = os.environ["GITEA_PAT"]
+gitea = j.clients.gitea.get_client(base_url=gitea_url, token=gitea_pat)
+gitea_user = gitea.user
+#gitea_user.userCurrentPostKey(...)
 ```
 
 Create a repository:

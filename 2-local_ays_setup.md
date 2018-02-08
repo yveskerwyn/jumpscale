@@ -7,7 +7,8 @@ Steps:
 - [Checks](#checks)
 - [Install AYS Server](#install-ays)
 - [Start AYS server](#start-ays)
-- [Test AYS server](#test-ays)
+- [Test AYS using the JumpScale client for AYS](#test-ays)
+- [Test AYS using the AYS command line tool](#ays-cli-test)
 - [Enable Remote Access](#remote-acccess)
 - [Add the AYS API console](#api-console)
 - [Add JumpScale Portal](#add-portal)
@@ -60,11 +61,27 @@ ays_host.portforward_create(publicport=external_ays_port, localport=5000)
 ```
 
 <a id="test-ays"></a>
+## Test AYS using the JumpScale client for AYS
 
 Execute:
 ```python
 ays = j.clients.ays.get(url="http://localhost:5000")
 ays.repositories.list()
+```
+
+<a id="ays-cli-test"></a>
+## Test AYS using the AYS command line tool
+
+First fix a missing dependency:
+```python
+j.tools.prefab.local.core.run("pip install psutil==5.2.2")
+```
+
+This will allow you to list all repositories using the AYS command line tool:
+```bash
+CTRL+Z
+ays repo list
+fg
 ```
 
 <a id="remote-access"></a>
@@ -125,7 +142,6 @@ j.tools.prefab.local.js9.atyourservice.configure_api_console(url=public_ays_url)
 ```
 
 This will update the value of the `baseUri` key in `/opt/code/github/jumpscale/ays9/JumpScale9AYS/ays/server/apidocs/api.raml`; make sure you have used the public IP address here.
-
 
 <a id="add-portal"></a>
 ## Add JumpScale Portal

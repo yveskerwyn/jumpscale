@@ -15,7 +15,6 @@ Full list: https://github.com/Jumpscale/prefab9/issues?q=is%3Aopen+is%3Aissue+la
 
 Full lists: https://github.com/Jumpscale/ays9/issues?q=is%3Aopen+is%3Aissue+label%3Atype_bug
 
-- [AttributeError: 'Bash' object has no attribute 'locale_check' (#417)](https://github.com/Jumpscale/ays9/issues/417)
 - [concurrent.futures._base.CancelledError (#416)](https://github.com/Jumpscale/ays9/issues/416)
 - [Unable to get the auto-push to work with Gitea (#415)](https://github.com/Jumpscale/ays9/issues/415)
 - [Unable to delete a repository from the AYS Portal app (#414)](https://github.com/Jumpscale/ays9/issues/414)
