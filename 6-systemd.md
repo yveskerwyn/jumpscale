@@ -2,7 +2,7 @@
 
 ## AYS server
 ```bash
-cat /etc/systemd/system/ays.service
+vim /etc/systemd/system/ays.service
 [Unit]
 Description=AYS Server
 Wants=network-online.target
@@ -10,15 +10,50 @@ After=network-online.target
 
 [Service]
 WorkingDirectory=/opt/code/github/jumpscale/ays9
-ExecStart=/usr/bin/sudo /bin/bash -a -c 'source /root/.bash_profile && /usr/bin/env /usr/bin/python3 main.py --host 127.0.0.1 --port 5000 --log info'
+ExecStart=/usr/bin/sudo /bin/bash -a -c 'source /root/.bash_profile && /usr/bin/env /usr/bin/python3 main.py --host 0.0.0.0 --port 5000 --log info'
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-## AYS Portal
+If you ever change this file, you need to reload the services:
 ```bash
-cat /etc/systemd/system/portal.service
+systemctl daemon-reload
+```
+
+After having created the above unit file for the AYS server, have systemd enable it:
+```bash
+systemctl enable ays
+```
+
+List all enabled services:
+```bash
+systemctl list-unit-files | grep enabled
+```
+
+Start the AYS service:
+```bash
+systemctl start ays.service
+```
+
+List all running services:
+```bash
+systemctl | grep running
+```
+
+In order to check the output from AYS server you might start a TMUX session and tail the log file:
+```bash
+tmux new -s "atyourservice"
+tail -f /opt/var/log/jumpscale.log
+```
+
+## AYS Portal
+
+@TODO: also create a unit file for mongodb
+@ root@portal:~# echo **START**;/opt/bin/mongod --dbpath '/opt/var/data/mongodb' && echo **OK** || echo **ERROR**
+
+```bash
+vim /etc/systemd/system/portal.service
 [Unit]
 Description=AYS Portal
 Wants=network-online.target
@@ -32,10 +67,37 @@ ExecStart=/usr/bin/sudo /bin/bash -a -c 'source /root/.bash_profile && /usr/bin/
 WantedBy=multi-user.target
 ```
 
+
+If you ever change this file, you need to reload the services:
+```bash
+systemctl daemon-reload
+```
+
+After having created the above unit file for the AYS portal, have systemd enable it:
+```bash
+systemctl enable portal
+```
+
+List all enabled services:
+```bash
+systemctl list-unit-files | grep enabled
+```
+
+Start the portal service:
+```bash
+systemctl start portal.service
+```
+
+List all running services:
+```bash
+systemctl | grep running
+```
+
+
 ## Caddy
 
 ```bash
-cat /etc/systemd/system/caddy.service
+vim /etc/systemd/system/caddy.service
 [Unit]
 Description=At Your Service
 Wants=network-online.target
@@ -54,9 +116,19 @@ After having created the above files, have systemd enable them:
 sudo systemctl enable ays portal caddy
 ```
 
+List all enabled services:
+```bash
+systemctl list-unit-files | grep enabled
+```
+
 Start the services:
 ```bash
-sudo systemctl start ays.service
-sudo systemctl start portal.service
-sudo systemctl start caddy.service
+systemctl start ays.service
+systemctl start portal.service
+systemctl start caddy.service
+```
+
+List all running services:
+```bash
+systemctl | grep running
 ```
