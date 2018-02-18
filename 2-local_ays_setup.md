@@ -189,7 +189,7 @@ internal_ip_address = ays_host.model["nics"][0]["ipAddress"]
 Configure the AYS Portal app:
 ```python
 internal_ays_url = "http://{}:5000".format(internal_ip_address)
-j.tools.prefab.local.js9.atyourservice.configure_portal(ays_url=internal_ays_url, ays_console_url=public_ays_url, portal_name="main")
+j.tools.prefab.local.js9.atyourservice.configure_portal(ays_url=internal_ays_url, ays_console_url=public_ays_url, portal_name="main", restart=True)
 ```
 
 The above will:
@@ -238,7 +238,7 @@ Two levels of ItsYou.online integration:
 
 Configure the AYS server to only accept http/https requests with a JWT created for the organization created above, or for a user who's member of this organization:
 ```python
-j.tools.prefab.local.js9.atyourservice.configure(production=True, organization=ays_clients_org_name)
+j.tools.prefab.local.js9.atyourservice.configure(production=True, organization=ays_clients_org_name, restart=True)
 ```
 
 This will:
@@ -335,7 +335,7 @@ redirect_url = "http://{}:{}".format(public_ip_address, external_portal_port)
 
 Configure `client_id` and `client_secret` that the portal uses to identify itself, and also configure the ItsYou.online `organization` of which portal users need to be member:
 ```python
-j.tools.prefab.local.web.portal.configure(mongodbip='127.0.0.1', mongoport=27017, production=True, client_id=ays_clients_org_name, client_secret=ays_clients_org_secret, scope_organization=portal_users_org_name, redirect_address=redirect_url)
+j.tools.prefab.local.web.portal.configure(mongodbip='127.0.0.1', mongoport=27017, production=True, client_id=ays_clients_org_name, client_secret=ays_clients_org_secret, scope_organization=portal_users_org_name, redirect_address=redirect_url, restart=True)
 ```
 
 > Note: The values set for `client_id` and `client_secret` are only used by the portal to authenticate itself when authenticating portal users (authorization code grant flow). When the portal consumes the AYS server RESTful API it forwards the JWT from the user; so the portal doesn't create a JWT based on the client_id and secret.
@@ -345,12 +345,6 @@ j.tools.prefab.local.web.portal.configure(mongodbip='127.0.0.1', mongoport=27017
 Check the configuration on the host:
 ```bash
 vim js9host/cfg/jumpscale9.toml
-```
-
-Stop and start the portal:
-```python
-j.tools.prefab.local.web.portal.stop()
-j.tools.prefab.local.web.portal.start()
 ```
 
 Also update the redirect url in ItsYou.online:
@@ -406,7 +400,7 @@ j.tools.prefab.local.core.file_write(location=caddy_cfg_path, content=caddy_cfg)
 Update the redirect url, both for the portal and at ItsYou.online:
 ```python
 redirect_url = "https://{}".format(caddy_domain)
-j.tools.prefab.local.web.portal.configure(mongodbip='127.0.0.1', mongoport=27017, production=True, client_id=ays_clients_org_name, client_secret=ays_clients_org_secret, scope_organization=portal_users_org_name, redirect_address=redirect_url)
+j.tools.prefab.local.web.portal.configure(mongodbip='127.0.0.1', mongoport=27017, production=True, client_id=ays_clients_org_name, client_secret=ays_clients_org_secret, scope_organization=portal_users_org_name, redirect_address=redirect_url, restart=True)
 ays_clients_org_api_key.update(callback_url=redirect_url)
 ```
 
@@ -418,7 +412,7 @@ j.tools.prefab.local.js9.atyourservice.configure_api_console(url=public_ays_url)
 
 Update the AYS Portal app configuration:
 ```python
-j.tools.prefab.local.js9.atyourservice.configure_portal(ays_url=internal_ays_url, ays_console_url="https://{}".format(caddy_domain), portal_name="main")
+j.tools.prefab.local.js9.atyourservice.configure_portal(ays_url=internal_ays_url, ays_console_url="https://{}".format(caddy_domain), portal_name="main", restart=True)
 ```
 
 Create new port forwards:
