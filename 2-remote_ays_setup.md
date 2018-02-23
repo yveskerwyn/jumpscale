@@ -4,7 +4,7 @@ Execute the below steps from a machine with JumpScale 9.2.1 installed, as docume
 
 > It is currently only supported to install AYS server on a virtual machine in another cloud space than the cloud space from which you execute the below steps. If you need to install AYS on a virtual machine in the same cloud space it is recommended do a local installation.
 
-![](images/setup.png)
+![https://docs.google.com/drawings/d/1VJbSsOOxLm5i7JCzASSdOqC-6WKVcGdAec61sd4P45c/edit](https://docs.google.com/drawings/d/e/2PACX-1vQ76vsPKqTvAEZjWYPK3ZuApkhk-7F80KTAVbRA2QlVzq9XpfYrI4TouW0E3FZ80dAL7Scxbhm3mIgH/pub?w=644&h=432)
 
 Steps:
 - [Variables](#vars)
