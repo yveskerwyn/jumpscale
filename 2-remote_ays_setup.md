@@ -74,7 +74,7 @@ account = ovc_client.account_get(name=account_name, create=False)
 
 Get or create the VDC:
 ```python
-vdc = account.space_get(name=cloud_space_name, location=location)
+vdc = account.space_get(name=cloud_space_name, location=location, create=True)
 ```
 
 Make sure "mykey" is loaded:
@@ -150,6 +150,8 @@ Start the AYS server:
 ```python
 ays_host.prefab.js9.atyourservice.start(host="0.0.0.0")
 ```
+
+
 
 Add a port forward for the AYS server - to be deleted later what Caddy is added:
 ```python
