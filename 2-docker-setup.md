@@ -1,8 +1,8 @@
 # Docker setup
 
--[Create the Docker images](#create-images)
--[Publish to Docker Hub](#publish-images)
--[Deploy the Docker images](#deploy-images)
+- [Create the Docker images](#create-images)
+- [Publish to Docker Hub](#publish-images)
+- [Deploy the Docker images](#deploy-images)
 
 <a id="create-images"></a>
 ## Create the Docker images
