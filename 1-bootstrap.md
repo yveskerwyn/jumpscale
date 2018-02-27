@@ -67,6 +67,13 @@ Login again with root:
 ssh root@195.134.212.37 -p7122
 ```
 
+If not already done so, install `vim` and `curl`:
+```bash
+apt-get update
+apt-get install vim
+apt-get install curl
+```
+
 Install the Z tools
 ```bash
 export ZUTILSBRANCH=9.2.1

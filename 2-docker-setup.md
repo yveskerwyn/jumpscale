@@ -16,6 +16,7 @@ Set variables:
 #app_id = os.environ["APP_ID"]
 #secret = os.environ["SECRET"]
 branch = "9.2.1"
+#docker_branch = "17.12"
 tag="9.2.1"
 ```
 
@@ -31,6 +32,7 @@ j.tools.prefab.local.virtualization.docker.isInstalled()
 
 If not yet installed first install Docker:
 ```python
+#j.tools.prefab.local.virtualization.docker.install(branch=docker_branch)
 j.tools.prefab.local.virtualization.docker.install()
 ```
 
@@ -52,8 +54,9 @@ Create and start a container (keeping it alive for 1 hour):
 ```python
 host_config = j.sal.docker.client.api.create_host_config(port_bindings={5000: 5000})
 retval = j.sal.docker.client.api.create_container(image="ubuntu:16.04", name="ays-server", command="sleep 3600", ports=[5000], host_config=host_config)
-ays_container_id = retval.get('Id')
-ays_container = j.sal.docker.client.containers.get(container_id=ays_container_id)
+#ays_container_id = retval.get('Id')
+#ays_container = j.sal.docker.client.containers.get(container_id=ays_container_id)
+ays_container = j.sal.docker.client.containers.get(container_id="ays-server")
 ays_container.start()
 ```
 
@@ -88,14 +91,28 @@ Configure AYS:
 prefab.js9.atyourservice.configure(production=False, organization='', restart=False, host="0.0.0.0", port=5000)
 ```
 
-Start the AYS server:
+Start the AYS server - doesn't work from development branch:
 ```python
-prefab.js9.atyourservice.start()
+# prefab.js9.atyourservice.start()
+```
+
+Test the AYS server: 
+```bash
+ctrl+z
+docker exec -it ays-server bash
+eval $(ssh-agent)
+js9
+j.tools.prefab.local.js9.atyourservice.start()
+exit
+tmux at
+ctrl+b d
+exit
+fg
 ```
 
 Commit all changes:
 ```python
-container.commit(repository="jumpscale/ays-server", tag=tag)
+ays_container.commit(repository="jumpscale/ays-server", tag=tag)
 ```
 
 Stop and remove the container:
@@ -187,6 +204,14 @@ container.remove()
 <a id="publish-images"></a>
 ## Publish images
 
+Makes sure you are owner of the JumpScale organization on Docker Hub and that you are logged in:
+```bash
+ctrl+z
+docker login
+fg
+```
+
+Back in the interactive shell:
 ```python
 j.sal.docker.client.images.push("jumpscale/ays-server", tag)
 ```
@@ -194,21 +219,84 @@ j.sal.docker.client.images.push("jumpscale/ays-server", tag)
 <a id="deploy-images"></a>
 ## Deploy images
 
+Let's deploy the Docker containers on a OpenvCloud virtual machine, which is done is following steps:
+- [Create or get an SSH key](#get-sshkey)
+- [Create your JumpScale configuration repositoryCreate your JumpScale configuration repository](#create-jsconfig)
+- [Create your JumpScale configuration instances](#jsconfig-instances)
+- [Create a new virtual machine using the 9.3.0 JumpScale client for OpenvCloud](#create-vm)
+- [Deploy the containers](#deploy-containers)
+
+<a id="get-sshkey"></a>
+### Create or get an SSH key
+
+On your (virtual) machine with JumpScale 9.3.0 installed, you can either use an existing SSH key or create a new SSH key.
+
+Here's how to create a new one from JumpScale:
+```python
+import os
+new_ssh_key_name = "new_key"
+new_ssh_key_path = os.path.expanduser("~/.ssh/{}".format(ssh_key_name))
+j.clients.ssh.ssh_keys_load(path=new_ssh_key_path)
+```
+
+In order to verify that you newly created key is loaded, execute:
+```python
+j.clients.ssh.ssh_keys_list_from_agent()
+```
+
+<a id="create-jsconfig"></a>
+### Create your JumpScale configuration repository
+
+Let's now assume you don't have any JumpScale config instances yet, and that you want to encrypt all JumpScale config instances with your newly created SSH key.
+
+First you need to create a Git repository that will hold all your config instances, this is achieved by executing `js9_config init` in a new or existing Git repository:
+```bash
+mkdir $path_to_your_jsconfig_repo
+cd $path_to_your_jsconfig_repo
+git init
+js9_config init
+```
+
+@todo # how to do this from JumpScale?
+
+
+<a id="jsconfig-instances"></a>
+### Create your JumpScale configuration instances
+
+Now let's create a config instance for your ItsYou.online profile:
+```python
+import os
+app_id = os.environ["APP_ID"]
+secret = os.environ["SECRET"]
+iyo_config = {
+    "application_id_": app_id,
+    "secret_": secret
+}
+j.tools.configmanager.configure(location="j.clients.itsyouonline", data=iyo_config, instance="main", sshkey_path=new_ssh_key_path)
+```
+
+
+
+And now the config instance for OpenvCloud:
+```python
+
+```
+
 Set the variables:
 ```python
-ssh_key_name = "bootstrap_vm2_key"
+
 account_name = "Account_of_Yves"
 cloud_space_name = "docker-space"
 location = "be-gen-1"
 docker_host_name = "docker-host"
 ```
 
-Get an OpenvCloud client, specifying the private key you used for encrypting the configutation instances:
+Get an OpenvCloud client, specifying the private key you used for encrypting the configuration instances:
 ```python
 import os
 
-key_path = os.path.expanduser("~/.ssh/{}".format(ssh_key_name))
-ovc_client = j.clients.openvcloud.get(instance="main", sshkey_path=key_path)
+
+ovc_client = j.clients.openvcloud.get(instance="main", sshkey_path=ssh_key_path)
 ```
 
 Access the OpenvCloud account:
