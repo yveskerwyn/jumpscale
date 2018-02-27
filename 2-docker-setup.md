@@ -7,6 +7,8 @@
 <a id="create-images"></a>
 ## Create the Docker images
 
+### AI
+
 On a (virtual) machine with JumpScale installed execute the following.
 
 Set variables:
