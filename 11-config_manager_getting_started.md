@@ -5,6 +5,24 @@ If not already done, we need to create a configuration instance for ItsYou.onlin
 js9_config init
 ```
 
+Or from the interactive shell:
+```python
+j.tools.configmanager.init()
+```
+
+In the above case, you're not passing any arguments, as a result you'll get answer some questions:
+```python
+In [1]: j.tools.configmanager.init()
+* JS9 init: ssh key found in agent is:'/Users/yves/.ssh/id_rsa'
+* JS9 init: Is it ok to use this one:'/Users/yves/.ssh/id_rsa'?
+ [y/n]: y
+* JS9 init: Do you want to use a git based CONFIG dir, y/n?
+ [y/n]: n
+* JS9 init: will create config dir in '/opt/cfg/myconfig/', your config will not be centralised! Is this ok?
+ [y/n]: y
+```
+
+
 Adding a JumpScale configuration instance for ItsYou.online is done as follows:
 ```bash
 js9_config configure -l j.clients.itsyouonline -i main -s /root/.ssh/id_rsa
@@ -33,7 +51,8 @@ iyo_config = {
     "application_id_": app_id,
     "secret_": secret
 }
-j.tools.configmanager.configure(location="j.clients.itsyouonline", data=iyo_config, instance="main", sshkey_path="/root/.ssh/bootstrap_vm2_key")
+#j.tools.configmanager.configure(location="j.clients.itsyouonline", data=iyo_config, instance="main", sshkey_path="/root/.ssh/bootstrap_vm2_key")
+j.tools.configmanager.configure(location="j.clients.itsyouonline", data=iyo_config, instance="main")
 ```
 
 Based on this ('main') configuration instance you then can get an ItsYou.online client as follows:
@@ -85,11 +104,13 @@ ovc_client = j.clients.openvcloud.get(instance="main", sshkey_path=key_path)
 Just as with the ItsYou.online client you can override (update) configuration instance, or even create a new instance with different data:
 ```python
 url = "ch-gen-1.demo.greenitglobe.com"
-data = {
-    "address": url
+location = "ch-gen-1"
+ovc_config = {
+    "address": url,
+    "location": location
 }
 
-ovc_client = j.clients.openvcloud.get(instance="swiss", data=data, sshkey_path=key_path)
+ovc_client = j.clients.openvcloud.get(instance="swiss", data=ovc_config, sshkey_path=key_path)
 ```
 
 As a result of the above you will now have two OpenvCloud configuration instances, of which the newly created one `swiss` is used:
@@ -104,7 +125,8 @@ j.clients.openvcloud.list()
 
 You can update the newly created OpenvCloud configuration instance as follows:
 ```python
-j.tools.configmanager.configure(location="j.clients.openvcloud", instance="swiss", sshkey_path=key_path)
+#j.tools.configmanager.configure(location="j.clients.openvcloud", instance="swiss", data=ovc_config, sshkey_path=key_path)
+j.tools.configmanager.configure(location="j.clients.openvcloud", instance="swiss", data=ovc_config)
 ```
 
 Instead of using the JWT from the ItsYou.online configuration instance, you can also pass a JWT explicitly, and have it saved to a (new) OpenvCloud configuration instance:

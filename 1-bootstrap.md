@@ -70,8 +70,7 @@ ssh root@195.134.212.37 -p7122
 If not already done so, install `vim` and `curl`:
 ```bash
 apt-get update
-apt-get install vim
-apt-get install curl
+apt-get install -y vim curl
 ```
 
 Install the Z tools
@@ -81,9 +80,10 @@ curl https://raw.githubusercontent.com/Jumpscale/bash/${ZUTILSBRANCH}/install.sh
 bash /tmp/install.sh
 ```
 
-Source the newly created `bash_profile` file:
+Source the newly created `.bashrc` file:
 ```bash
-. ~/.bash_profile
+#. ~/.bash_profile
+source ~/.bashrc
 ```
 
 <a id="install-jumpscale"></a>
