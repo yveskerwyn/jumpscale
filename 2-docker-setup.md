@@ -461,17 +461,22 @@ Here's the script:
 set -e
 js9 'j.clients.redis.start4core()'
 
-js9 'j.tools.prefab.local.web.portal.install(start=False, branch="9.2.1")'
+# the following is handeld by running install.sh in the Dockerfile 
+#echo "export LC_ALL=C.UTF-8" >> /root/.profile || return 1
+#echo "export LANG=C.UTF-8" >> /root/.profile || return 1
+#js9 'j.tools.prefab.local.web.portal.install(start=False, branch="9.2.1")'
+
 js9 'j.tools.prefab.local.js9.atyourservice.load_ays_space()'
+js9 'j.tools.prefab.local.web.portal.start()'
 
 if [ ! -z "$organization" ] ; then
-    js9 'import os; portal_client_id=os.environ["portal_client_id"];portal_secret=os.environ["portal_secret"];org=os.environ["organization"];redirect_url=os.environ["redirect_url"];j.tools.prefab.local.web.portal.configure(mongodbip="127.0.0.1", mongoport=27017, production=True, client_id=portal_client_id, client_secret=portal_secret, scope_organization=org, redirect_address=redirect_url, restart=False)'
+    js9 'import os; portal_client_id=os.environ["portal_client_id"];portal_secret=os.environ["portal_secret"];org=os.environ["organization"];redirect_url=os.environ["redirect_url"];j.tools.prefab.local.web.portal.configure(mongodbip="127.0.0.1", mongoport=27017, production=True, client_id=portal_client_id, client_secret=portal_secret, scope_organization=org, redirect_address=redirect_url, restart=True)'
 fi
 
 if [ ! -z "$ays_internal_ip_address" ] ; then
-    js9 'import os; ays_internal_ip_address = os.environ["ays_internal_ip_address"]; private_ays_url = "http://{}:5000".format(ays_internal_ip_address); j.tools.prefab.local.js9.atyourservice.configure_portal(ays_url=private_ays_url, ays_console_url=public_ays_url, portal_name="main", restart=False)'
+    js9 'import os; ays_internal_ip_address = os.environ["ays_internal_ip_address"]; external_ip_address = os.environ["external_ip_address"]; public_ays_url = "http://{}:5000".format(external_ip_address); private_ays_url = "http://{}:5000".format(ays_internal_ip_address); j.tools.prefab.local.js9.atyourservice.configure_portal(ays_url=private_ays_url, ays_console_url=public_ays_url, portal_name="main", restart=True)'
 fi
-js9 'j.tools.prefab.local.web.portal.start()'
+
 tail -f /opt/var/log/jumpscale.log
 ```
 
@@ -490,9 +495,12 @@ Here's the Dockerfile:
 FROM jumpscale/js9_full
 MAINTAINER Yves Kerwyn
 
+#RUN ssh-keyscan -t rsa github.com >> /root/.ssh/known_hosts
+
 RUN git clone -b 9.2.1 https://github.com/Jumpscale/portal9.git
 
-RUN pip3 install -e /opt/code/github/jumpscale/portal9
+#RUN pip3 install -e /opt/code/github/jumpscale/portal9
+RUN cd /opt/code/github/jumpscale/portal9; ./install.sh 9.2.1
 
 EXPOSE 5000
 VOLUME ["/root/js9host"]
@@ -500,11 +508,12 @@ COPY ./docker-entrypoint.sh /
 ENTRYPOINT ["/docker-entrypoint.sh"]
 ```
 
+> Note that we run `install.sh` instead of `pip3 install`, which does the same (running `setup.py`) + installs the portal
+
 Build the image:
 ```bash
 docker build --tag jumpscale/js9_ays_portal .
 ```
-
 
 <a id="portal-jumpscale"></a>
 #### Create an AYS Portal image using JumpScale
@@ -755,7 +764,7 @@ This IP address needs to be passed as the value for the environment variable `ay
 
 Run (= create + start) a Docker container with the AYS portal image:
 ```bash
-docker run -d --name ays-portal -p "8200:8200" -e ays_internal_ip_address="172.17.0.2" -e portal_client_id="ays-organizations.docker-on-mac" -e portal_secret="4t2EknNeZPqu8LdzaiVa7y8XLtH0K6bI2QUOS10yiLGwv5-KOLL5" -e redirect_url="http://185.15.201.111:8200" -e organization="ays-organizations.docker-on-mac" jumpscale/js9_ays_portal
+docker run -d --name ays-portal -p "8200:8200" -e ays_internal_ip_address="172.17.0.2" -e external_ip_address="185.15.201.111" -e portal_client_id="ays-organizations.docker-on-mac" -e portal_secret="4t2EknNeZPqu8LdzaiVa7y8XLtH0K6bI2QUOS10yiLGwv5-KOLL5" -e redirect_url="http://185.15.201.111:8200" -e organization="ays-organizations.docker-on-mac" jumpscale/js9_ays_portal
 ```
 
 Check the container:
