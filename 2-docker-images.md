@@ -242,6 +242,7 @@ RUN git clone -b 9.2.1 https://github.com/Jumpscale/portal9.git
 
 #RUN pip3 install -e /opt/code/github/jumpscale/portal9
 RUN cd /opt/code/github/jumpscale/portal9; ./install.sh 9.2.1
+RUN js9 'j.tools.prefab.local.web.portal.install(branch="9.2.1")'
 RUN js9 'j.tools.prefab.local.js9.atyourservice.load_ays_space(branch="9.2.1")'
 
 EXPOSE 5000
@@ -255,30 +256,4 @@ Build the image:
 docker build --build-arg docker_hub_username=$docker_hub_username --tag $docker_hub_username/js9_ays_portal:9.2.1 .
 ```
 
-Error:
-```python
-Traceback (most recent call last):
-  File "/usr/local/bin/js9", line 20, in <module>
-    exec(toexec)
-  File "<string>", line 1, in <module>
-  File "/opt/code/github/jumpscale/prefab9/modules/js9/PrefabAtYourService.py", line 98, in load_ays_space
-    self.prefab.web.portal.addSpace('{}apps/AYS'.format(self.repo_dir))
-  File "/opt/code/github/jumpscale/prefab9/modules/web/PrefabPortal.py", line 212, in addSpace
-    self.prefab.core.file_link(spacepath, dest_dir)
-  File "/opt/code/github/jumpscale/prefab9/JumpScale9Prefab/PrefabCore.py", line 990, in file_link
-    (self.shell_safe(source), self.shell_safe(destination)))
-  File "/opt/code/github/jumpscale/prefab9/JumpScale9Prefab/PrefabCore.py", line 1323, in run
-    cmd, checkok=checkok, die=die, showout=showout, env=env, timeout=timeout)
-  File "/opt/code/github/jumpscale/core9/JumpScale9/tools/executor/ExecutorLocal.py", line 103, in execute
-    outputStderr=outputStderr, timeout=timeout)
-  File "/opt/code/github/jumpscale/core9/JumpScale9/sal/process/SystemProcess.py", line 196, in execute
-    raise RuntimeError("Could not execute:%s\nstdout:%s\nerror:\n%s"%(rc,out,err))
-RuntimeError: Could not execute:1
-stdout:
-error:
-ln: failed to create symbolic link '/opt/jumpscale9/apps/portals/main/base/AYS': No such file or directory
-Could not execute:1
-stdout:
-error:
-ln: failed to create symbolic link '/opt/jumpscale9/apps/portals/main/base/AYS': No such file or directory
-```
+This results in the issue as reported here: https://github.com/Jumpscale/prefab9/issues/179

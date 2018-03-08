@@ -506,6 +506,7 @@ RUN git clone -b 9.2.1 https://github.com/Jumpscale/portal9.git
 
 #RUN pip3 install -e /opt/code/github/jumpscale/portal9
 RUN cd /opt/code/github/jumpscale/portal9; ./install.sh 9.2.1
+RUN js9 'j.tools.prefab.local.web.portal.install(branch="9.2.1")'
 RUN js9 'j.tools.prefab.local.js9.atyourservice.load_ays_space(branch="9.2.1")'
 
 EXPOSE 5000
@@ -520,6 +521,8 @@ Build the image:
 ```bash
 docker build --build-arg docker_hub_username=$docker_hub_username --tag $docker_hub_username/js9_ays_portal:9.2.1 .
 ```
+
+This results in the issue as reported here: https://github.com/Jumpscale/prefab9/issues/179
 
 <a id="portal-jumpscale"></a>
 #### Create an AYS Portal image using JumpScale
