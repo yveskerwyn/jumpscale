@@ -117,7 +117,8 @@ docker build --build-arg docker_hub_username=$docker_hub_username --tag $docker_
 
 Test this image:
 ```bash
-docker run -it --name js9 -p "5000:5000" -e organization="ays-organizations.docker-on-mac" $docker_hub_username/js9_full bash
+export iyo_organization="ays-organizations.docker-on-mac"
+docker run -it --name js9-test -p "5000:5000" -e organization=$iyo_organization $docker_hub_username/js9_full:9.2.1 bash
 ```
 
 Next create the AYS server image.
@@ -179,7 +180,8 @@ docker build --build-arg docker_hub_username=$docker_hub_username --tag $docker_
 
 Start an AYS server container:
 ```bash
-docker run -d --name ays-server -p "5000:5000" -e organization="ays-organizations.docker-on-mac" -e external_ip_address="185.15.201.111" jumpscale/js9_ays
+export external_ip_address="185.15.201.111"
+docker run -d --name ays-server -p "5000:5000" -e organization=$iyo_organization $docker_hub_username -e external_ip_address=$external_ip_address jumpscale/js9_ays
 ```
 
 Manually run the `docker-entrypoint.sh`:

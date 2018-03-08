@@ -181,7 +181,8 @@ docker build --build-arg docker_hub_username=$docker_hub_username --tag $docker_
 
 Test the image:
 ```bash
-docker run -it --name js9-test -p "5000:5000" -e organization="ays-organizations.docker-on-mac" jumpscale/js9_full bash
+export iyo_organization="ays-organizations.docker-on-mac"
+docker run -it --name js9-test -p "5000:5000" -e organization=$iyo_organization $docker_hub_username/js9_full:9.2.1 bash
 ```
 
 <a id="jumpscale-jumpscale"></a>
@@ -641,8 +642,7 @@ Run (= create + start) a Docker container with the AYS server image:
 # DON'T USE THE VOLUME MAPPING: -v "/opt/var/data/ays-server:/root/js9host"
 # docker run -it --name ays-server -p "5000:5000" -e organization="ays-organizations.docker-on-mac" -e external_ip_address="185.15.201.111" jumpscale/js9_ays bash
 
-#docker run -d --name ays-server -p "5000:5000" -e organization="ays-organizations.docker-on-mac" -e external_ip_address="185.15.201.111" yveskerwyn/js9_ays:9.2.1
-docker run -d --name ays-server -p "5000:5000" -e organization="ays-organizations.docker-on-mac" -e external_ip_address="192.168.16.184" yveskerwyn/js9_ays:9.2.1
+docker run -d --name ays-server -p "5000:5000" -e organization=$iyo_organization -e external_ip_address="192.168.16.184" $docker_hub_username/js9_ays:9.2.1
 
 ```
 

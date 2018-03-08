@@ -169,7 +169,7 @@ ays_host.portforward_create(publicport=external_portal_port, localport=8200)
 
 Add the AYS Portal "app":
 ```python
-j.tools.prefab.local.js9.atyourservice.load_ays_space()
+j.tools.prefab.local.js9.atyourservice.load_ays_space(branch=branch)
 ```
 
 Stop and start the portal:
