@@ -505,7 +505,7 @@ RUN git clone -b 9.2.1 https://github.com/Jumpscale/portal9.git
 
 #RUN pip3 install -e /opt/code/github/jumpscale/portal9
 RUN cd /opt/code/github/jumpscale/portal9; ./install.sh 9.2.1
-RUN js9 'j.tools.prefab.local.js9.atyourservice.load_ays_space()'
+RUN js9 'j.tools.prefab.local.js9.atyourservice.load_ays_space(branch="9.2.1")'
 
 EXPOSE 5000
 VOLUME ["/root/js9host"]
