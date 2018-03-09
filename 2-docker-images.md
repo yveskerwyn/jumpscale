@@ -320,9 +320,4 @@ Build the image:
 docker build --build-arg docker_hub_username=$docker_hub_username --tag $docker_hub_username/ays_portal:9.2.1 .
 ```
 
-
-Test the AYS portal image:
-```bash
-
-
-```
+This results (on Mac) in the issue as reported here: https://github.com/Jumpscale/prefab9/issues/179
