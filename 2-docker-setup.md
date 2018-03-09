@@ -88,102 +88,10 @@ For more information about the ZUtils see https://github.com/Jumpscale/bash.
 <a id="jumpscale-dockerfile"></a>
 #### Create a JumpScale image using a Dockerfile
 
-> Only for ays9 we run `install.sh` after running `pip3 install -e .` (which runs `setup.py`), it's interesting to check the `install.sh` in each of repositories in order to understand what you potentially miss when only running `pip3 install -e .`
+See:
+- [Creating the base image](2-docker-images.md#base-image)
+- [Creating the JumpScale Image](2-docker-images.md#js9-image)
 
-First let's create an image which adds Python to a base Ubuntu 16.04 image, using following Dockerfile:
-```bash
-mkdir -p /tmp/Dockerfiles/ubuntu_python
-cd /tmp/Dockerfiles/ubuntu_python
-vim Dockerfile
-```
-
-Here's the Dockerfile:
-```Dockerfile
-FROM ubuntu:16.04
-MAINTAINER Yves Kerwyn
-RUN apt-get update
-RUN apt-get install -y git \
-                       curl \
-                       mc \
-                       openssh-server \
-                       net-tools \
-                       iproute2 \
-                       tmux \
-                       localehelper \ 
-                       psmisc \
-                       python3
-                       
-RUN curl -sk https://bootstrap.pypa.io/get-pip.py > /tmp/get-pip.py
-RUN python3 /tmp/get-pip.py
-RUN pip3 install --upgrade pip
-RUN pip3 install tmuxp
-RUN pip3 install gitpython
-```
-
-Build the image:
-```bash
-export docker_hub_username="yveskerwyn"
-docker build --build-arg docker_hub_username=$docker_hub_username --tag $docker_hub_username/ubuntu_python .
-```
-
-Create another image now adding JumpScale core9, lib9 and prefab9 to the `jumpscale/ubuntu_python` image:
-```bash
-mkdir -p /tmp/Dockerfiles/js9_full
-cd /tmp/Dockerfiles/js9_full
-vim Dockerfile
-```
-
-Here's the Dockerfile:
-```Dockerfile
-ARG docker_hub_username="jumpscale"
-FROM $docker_hub_username/ubuntu_python
-MAINTAINER Yves Kerwyn
-
-RUN apt-get install -y build-essential \
-                       python3-dev \
-                       libvirt-dev \
-                       libssl-dev \
-                       libffi-dev \
-                       libssh-dev \
-                       sqlite3 \
-                       libsqlite3-dev 
-
-RUN pip3 install Cython>=0.25.2 \
-                 asyncssh>=1.9.0 \
-                 numpy>=1.12.1 \
-                 tarantool>=0.5.4 \
-                 python-jose
-
-#RUN ssh-keyscan -t rsa github.com >> /root/.ssh/known_hosts
-
-RUN mkdir -p /opt/code/github/jumpscale 
-WORKDIR /opt/code/github/jumpscale
-
-RUN git clone -b 9.2.1 https://github.com/Jumpscale/core9.git
-RUN git clone -b 9.2.1 https://github.com/Jumpscale/lib9.git
-RUN git clone -b 9.2.1 https://github.com/Jumpscale/prefab9.git
-
-RUN cp /opt/code/github/jumpscale/core9/mascot /root/.mascot.txt
-
-RUN pip3 install -e /opt/code/github/jumpscale/core9
-RUN pip3 install -e /opt/code/github/jumpscale/lib9
-RUN pip3 install -e /opt/code/github/jumpscale/prefab9
-
-#ENTRYPOINT ["js9"]
-```
-
-> Note that the `pip3 install` steps will only execute the `setup.py`, so the `install.sh` scripts are not run. 
-
-Build the image:
-```bash
-docker build --build-arg docker_hub_username=$docker_hub_username --tag $docker_hub_username/js9_full:9.2.1 .
-```
-
-Test the image:
-```bash
-export iyo_organization="ays-organizations.docker-on-mac"
-docker run -it --name js9-test -p "5000:5000" -e organization=$iyo_organization $docker_hub_username/js9_full:9.2.1 bash
-```
 
 <a id="jumpscale-jumpscale"></a>
 #### Create JumpScale image using JumpScale
@@ -282,64 +190,8 @@ For more information about the ZUtils see https://github.com/Jumpscale/bash.
 <a id="ays-dockerfile"></a>
 #### Create an AYS Server image using a Dockerfile
 
-This Dockerfile will next to adding AYS to the `jumpscale/js9_full` image, also include an entrypoint to start the AYS server.
+See [Creating the AYS server Docker image](2-docker-images.md#ays-image)
 
-Let's first create an ENTRYPOINT script:
-```bash
-mkdir -p /tmp/Dockerfiles/js9_ays
-cd /tmp/Dockerfiles/js9_ays
-vim docker-entrypoint.sh
-```
-
-Here's the script: 
-```bash
-#!/bin/bash
-set -e
-js9 'j.clients.redis.start4core()'
-
-if [ ! -z "$organization" ] ; then
-    js9 'import os; org=os.environ["organization"]; j.tools.prefab.local.js9.atyourservice.configure(production=True, organization=org, restart=False, host="0.0.0.0", port=5000)'
-fi
-if [ ! -z "$external_ip_address" ] ; then
-    js9 'import os; external_ip_address = os.environ["external_ip_address"]; public_ays_url = "http://{}:5000".format(external_ip_address); j.tools.prefab.local.js9.atyourservice.configure_api_console(url=public_ays_url)'
-fi
-js9 'j.tools.prefab.local.js9.atyourservice.start()'
-tail -f /opt/var/log/jumpscale.log
-```
-
-Don't forget:
-```bash
-chmod +x ./docker-entrypoint.sh
-```
-
-Create the Dockerfile:
-```bash
-vim Dockerfile
-```
-
-Here's the Dockerfile:
-```Dockerfile
-ARG docker_hub_username="jumpscale"
-FROM $docker_hub_username/js9_full:9.2.1
-MAINTAINER Yves Kerwyn
-
-RUN git clone -b 9.2.1 https://github.com/Jumpscale/ays9.git
-
-RUN pip3 install -e /opt/code/github/jumpscale/ays9
-RUN /opt/code/github/jumpscale/ays9/install.sh
-
-EXPOSE 5000
-VOLUME ["/root/js9host"]
-COPY ./docker-entrypoint.sh /
-ENTRYPOINT ["/docker-entrypoint.sh"]
-```
-
-> Note we also run `install.sh` next to running `pip3 install -e .` (which runs `setup.py`), we only do this for the AYS repository; it's interesting to check the `install.sh` in each of repositories in order to understand what you potentially miss when only running `pip3 install -e .`, for AYS we need it in order to install the AYS server.
-
-Build the image:
-```bash
-docker build --build-arg docker_hub_username=$docker_hub_username --tag $docker_hub_username/js9_ays:9.2.1 .
-```
 
 <a id="ays-jumpscale"></a>
 #### Create an AYS Server image using JumpScale
@@ -452,77 +304,8 @@ For more information about the ZUtils see https://github.com/Jumpscale/bash.
 <a id="portal-dockerfile"></a>
 #### Create an AYS Portal image using a Dockerfile
 
-Let's first create an ENTRYPOINT script:
-```bash
-mkdir -p /tmp/Dockerfiles/js9_portal
-cd /tmp/Dockerfiles/js9_portal
-vim docker-entrypoint.sh
-```
 
-Here's the script: 
-```bash
-#!/bin/bash
-set -e
-js9 'j.clients.redis.start4core()'
-
-#echo "export LC_ALL=C.UTF-8" >> /root/.profile || return 1
-#echo "export LANG=C.UTF-8" >> /root/.profile || return 1
-#js9 'j.tools.prefab.local.web.portal.install(start=False, branch="9.2.1")'
-
-#Move to Dockerfile, so this is executed when building the image, not when creating the container
-#js9 'j.tools.prefab.local.js9.atyourservice.load_ays_space()'
-
-if [ ! -z "$organization" ] ; then
-    js9 'import os; portal_client_id=os.environ["portal_client_id"];portal_secret=os.environ["portal_secret"];org=os.environ["organization"];redirect_url=os.environ["redirect_url"];j.tools.prefab.local.web.portal.configure(mongodbip="127.0.0.1", mongoport=27017, production=True, client_id=portal_client_id, client_secret=portal_secret, scope_organization=org, redirect_address=redirect_url, restart=False)'
-fi
-
-if [ ! -z "$ays_internal_ip_address" ] ; then
-    js9 'import os; ays_internal_ip_address = os.environ["ays_internal_ip_address"]; external_ip_address = os.environ["external_ip_address"]; public_ays_url = "http://{}:5000".format(external_ip_address); private_ays_url = "http://{}:5000".format(ays_internal_ip_address); j.tools.prefab.local.js9.atyourservice.configure_portal(ays_url=private_ays_url, ays_console_url=public_ays_url, portal_name="main", restart=False)'
-fi
-
-js9 'j.tools.prefab.local.web.portal.start()'
-tail -f /opt/var/log/jumpscale.log
-```
-
-Don't forget:
-```bash
-chmod +x ./docker-entrypoint.sh
-```
-
-Create the Dockerfile:
-```bash
-vim Dockerfile
-```
-
-Here's the Dockerfile:
-```Dockerfile
-ARG docker_hub_username="jumpscale"
-FROM $docker_hub_username/js9_full:9.2.1
-MAINTAINER Yves Kerwyn
-
-#RUN ssh-keyscan -t rsa github.com >> /root/.ssh/known_hosts
-
-RUN git clone -b 9.2.1 https://github.com/Jumpscale/portal9.git
-
-#RUN pip3 install -e /opt/code/github/jumpscale/portal9
-RUN cd /opt/code/github/jumpscale/portal9; ./install.sh 9.2.1
-RUN js9 'j.tools.prefab.local.web.portal.install(branch="9.2.1")'
-RUN js9 'j.tools.prefab.local.js9.atyourservice.load_ays_space(branch="9.2.1")'
-
-EXPOSE 5000
-VOLUME ["/root/js9host"]
-COPY ./docker-entrypoint.sh /
-ENTRYPOINT ["/docker-entrypoint.sh"]
-```
-
-> Note that we run `install.sh` instead of `pip3 install`, which does the same (running `setup.py`) + installs the portal
-
-Build the image:
-```bash
-docker build --build-arg docker_hub_username=$docker_hub_username --tag $docker_hub_username/js9_ays_portal:9.2.1 .
-```
-
-This results in the issue as reported here: https://github.com/Jumpscale/prefab9/issues/179
+See [Creating the AYS Portal Docker image](2-docker-images.md#portal-image)
 
 <a id="portal-jumpscale"></a>
 #### Create an AYS Portal image using JumpScale
@@ -781,7 +564,7 @@ export iyo_organization="ays-organizations.docker-on-mac"
 export external_ip_address="185.15.201.111"
 export portal_client_id="ays-organizations.docker-on-mac"
 export portal_secret="4t2EknNeZPqu8LdzaiVa7y8XLtH0K6bI2QUOS10yiLGwv5-KOLL5"
-docker run -d --name ays-portal -p "8200:8200" -e ays_internal_ip_address=$ays_internal_ip_address -e external_ip_address=$external_ip_address -e portal_client_id=$portal_client_id-e portal_secret=$portal_secret -e redirect_url=$redirect_url -e organization=$iyo_organization jumpscale/js9_ays_portal
+docker run -d --name ays-portal -p "8200:8200" -e ays_internal_ip_address=$ays_internal_ip_address -e external_ip_address=$external_ip_address -e portal_client_id=$portal_client_id -e portal_secret=$portal_secret -e redirect_url=$redirect_url -e organization=$iyo_organization $docker_hub_username/ays_portal:9.2.1
 ```
 
 Check the container:
