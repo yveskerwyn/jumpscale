@@ -1,6 +1,10 @@
 # Happy Paths
 
+- [Starting from zero](#from-zero)
+- [Creating a virtual machine ready for hosting Docker containers](#create-vm)
 
+
+<a id="from-zero"></a>
 ## Starting from zero
 
 Reset:
@@ -68,7 +72,7 @@ Or using `j.clients.openvcloud.get()`:
 ovc_client = j.clients.openvcloud.get(instance="swiss", data=ovc_config, create=True, die=True, interactive=False)
 ```
 
-
+<a id="create-vm"></a>
 ## Creating a virtual machine ready for hosting Docker containers
 
 Get the configuration instance for ItsYou.online and OpenvCloud:
@@ -154,6 +158,6 @@ ssh_connection_config = {
 
 Create the SSH "connection" configuration instance:
 ```python
-ssh_connection = j.clients.ssh.get(instance='mysshconnection', data=ssh_connection_config, create=True, die=True, interactive=False)
+ssh_connection = j.clients.ssh.get(instance='my-ssh-connection', data=ssh_connection_config, create=True, die=True, interactive=False)
 ```
 
