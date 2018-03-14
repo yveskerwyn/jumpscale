@@ -1,7 +1,49 @@
 # Getting started with Zero-Robot
 
-Check script to create and public a Docker image for 0-robot:
+See: https://github.com/Jumpscale/0-robot/blob/master/docs/getting_started.md
+
+
+- [Using a Docker container](#docker)
+- [On your host](#host)
+
+
+<a id="docker"></a>
+## Using a Docker container
+
+Check script to create a Docker image for 0-robot:
 https://github.com/Jumpscale/0-robot/pull/73/commits/5e8486843cafeb134b1d9cc21a9c5ba23786c392#diff-70b193262828b6511beb01ec3605605d
+
+
+Create a container:
+```bash
+docker run --name 0-robot -d -p 192.168.103.254:6600:6600 -v /root/.ssh:/root/.ssh -e data-repo=ssh://git@docs.greenitglobe.com:10022/yves/zrobot3.git -e config-repo=ssh://git@docs.greenitglobe.com:10022/yves/myjsconfig.git -e template-repo=https://github.com/zero-os/0-templates jumpscale/0-robot:latest
+```
+
+
+
+Normally the above should start the zrobot... 
+
+If not:
+```bash
+docker exec -it 0-robot bash
+zrobot server start --listen :6600 --data-repo ssh://git@docs.greenitglobe.com:10022/yves/zrobot3.git --config-repo ssh://git@docs.greenitglobe.com:10022/yves/myjsconfig.git --template-repo https://github.com/zero-os/0-templates
+```
+
+In to interact, you either use the zrobot client, or the JumpScale client. The zrobot client installs as part of the zrobot installation; so there's no separate client (yet).
+
+Using the JumpScale:
+
+```python
+
+j.clients.zrobot.get
+
+```
+
+
+
+<a id="host"></a>
+## On your host
+
 
 Make sure you have a repository for your JumpScale configuration, in an empty repository do:
 ```bash
