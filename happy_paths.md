@@ -12,6 +12,10 @@ Reset:
 js9_config reset
 ```
 
+In case you don't have any SSH key yet, create it:
+```bash
+ssh-keygen -t rsa
+```
 
 ```python
 jsconfig = {}

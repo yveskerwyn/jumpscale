@@ -42,6 +42,7 @@ apt-get install -y docker-ce
 ## Variables
 
 ```bash
+export js_branch="9.2.1"
 export docker_hub_username="yveskerwyn"
 export iyo_organization="ays-organizations.docker-on-mac"
 ````
@@ -102,6 +103,7 @@ Here's the Dockerfile:
 ```Dockerfile
 ARG docker_hub_username="jumpscale"
 FROM $docker_hub_username/ubuntu_python
+ARG js_branch="development"
 MAINTAINER Yves Kerwyn
 
 RUN apt-get install -y build-essential \
@@ -124,9 +126,9 @@ RUN pip3 install Cython>=0.25.2 \
 RUN mkdir -p /opt/code/github/jumpscale 
 WORKDIR /opt/code/github/jumpscale
 
-RUN git clone -b 9.2.1 https://github.com/Jumpscale/core9.git
-RUN git clone -b 9.2.1 https://github.com/Jumpscale/lib9.git
-RUN git clone -b 9.2.1 https://github.com/Jumpscale/prefab9.git
+RUN git clone -b $js_branch https://github.com/Jumpscale/core9.git
+RUN git clone -b $js_branch https://github.com/Jumpscale/lib9.git
+RUN git clone -b $js_branch https://github.com/Jumpscale/prefab9.git
 
 RUN cp /opt/code/github/jumpscale/core9/mascot /root/.mascot.txt
 
@@ -139,14 +141,14 @@ ENTRYPOINT ["js9"]
 
 > Note that the `pip3 install` steps will only execute the `setup.py` of each repository, so the `install.sh` scripts are not used here. 
 
-Build the image:
+Build the image, here using the 9.2.1 branch:
 ```bash
-docker build --build-arg docker_hub_username=$docker_hub_username --tag $docker_hub_username/js9_full:9.2.1 .
+docker build --build-arg docker_hub_username=$docker_hub_username --build-arg js_branch=$js_branch --tag $docker_hub_username/js9_full:$js_branch .
 ```
 
 Test the image:
 ```bash
-docker run -it --rm --name js9-test -p "5000:5000" -e organization=$iyo_organization $docker_hub_username/js9_full:9.2.1
+docker run -it --rm --name js9-test -p "5000:5000" -e organization=$iyo_organization $docker_hub_username/js9_full:$js_branch
 ```
 
 <a id="ays-image"></a>
@@ -190,10 +192,11 @@ vim Dockerfile
 Here's the Dockerfile:
 ```Dockerfile
 ARG docker_hub_username="jumpscale"
-FROM $docker_hub_username/js9_full:9.2.1
+FROM $docker_hub_username/js9_full:$js_branch
+ARG js_branch="development"
 MAINTAINER Yves Kerwyn
 
-RUN git clone -b 9.2.1 https://github.com/Jumpscale/ays9.git
+RUN git clone -b $js_branch https://github.com/Jumpscale/ays9.git
 
 RUN pip3 install -e /opt/code/github/jumpscale/ays9
 RUN /opt/code/github/jumpscale/ays9/install.sh
@@ -208,14 +211,14 @@ ENTRYPOINT ["/docker-entrypoint.sh"]
 
 Build the image:
 ```bash
-docker build --build-arg docker_hub_username=$docker_hub_username --tag $docker_hub_username/ays_server:9.2.1 .
+docker build --build-arg docker_hub_username=$docker_hub_username --tag $docker_hub_username/ays_server:$js_branch .
 ```
 
 Test the AYS server image:
 ```bash
 ifconfig | grep "inet " | grep -v 127.0.0.1
 export external_ip_address="192.168.1.147"
-docker run -d --name ays-server -p "5000:5000" -e organization=$iyo_organization -e external_ip_address=$external_ip_address $docker_hub_username/ays_server:9.2.1
+docker run -d --name ays-server -p "5000:5000" -e organization=$iyo_organization -e external_ip_address=$external_ip_address $docker_hub_username/ays_server:$js_branch
 ```
 
 Manually run the `docker-entrypoint.sh`:
@@ -295,12 +298,13 @@ vim Dockerfile
 Here's the Dockerfile:
 ```Dockerfile
 ARG docker_hub_username="jumpscale"
-FROM $docker_hub_username/js9_full:9.2.1
+FROM $docker_hub_username/js9_full:$js_branch\
+ARG js_branch="development"
 MAINTAINER Yves Kerwyn
 
 #RUN ssh-keyscan -t rsa github.com >> /root/.ssh/known_hosts
 
-RUN git clone -b 9.2.1 https://github.com/Jumpscale/portal9.git
+RUN git clone -b $js_branch https://github.com/Jumpscale/portal9.git
 
 RUN pip3 install -e /opt/code/github/jumpscale/portal9
 #RUN cd /opt/code/github/jumpscale/portal9; ./install.sh 9.2.1
@@ -317,7 +321,7 @@ ENTRYPOINT ["/docker-entrypoint.sh"]
 
 Build the image:
 ```bash
-docker build --build-arg docker_hub_username=$docker_hub_username --tag $docker_hub_username/ays_portal:9.2.1 .
+docker build --build-arg docker_hub_username=$docker_hub_username --tag $docker_hub_username/ays_portal:$js_branch .
 ```
 
 This results (on Mac) in the issue as reported here: https://github.com/Jumpscale/prefab9/issues/179
