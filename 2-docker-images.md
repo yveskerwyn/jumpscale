@@ -113,7 +113,8 @@ RUN apt-get install -y build-essential \
                        libffi-dev \
                        libssh-dev \
                        sqlite3 \
-                       libsqlite3-dev 
+                       libsqlite3-dev \
+                       sudo
 
 RUN pip3 install Cython>=0.25.2 \
                  asyncssh>=1.9.0 \
