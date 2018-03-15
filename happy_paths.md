@@ -30,6 +30,17 @@ This will create:
 - `id_rsa.toml` in `/opt/myconfi/j.clients.sshkey`: a configuration instance for the specified SSH key (`/root/.ssh/id_rsa`) that will be used for encrypting all secret configuration data 
 - a configuration instance in `/opt/myconfij.tools.myconfig` 
 
+
+You can also update the `[myconfig]` section in `jumpscale9.toml` as follows, here changing the name of the SSH key to use for the encryption:
+```python
+j.core.state.configSetInDict("myconfig", "sshkeyname", "id_rsa")
+```
+
+Or check the value as follows:
+```python
+j.core.state.configGetFromDict("myconfig", "sshkeyname") 
+```
+
 Prepare the configuration data for a new ItsYou.online configuration instance:
 ```python
 import os
@@ -60,7 +71,6 @@ ovc_config = {
     "location": location
 }
 ```
-
 
 Create an OpenvCloud configuration instance using `j.tools.configmanager.configure`:
 ```python
