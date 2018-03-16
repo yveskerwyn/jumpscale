@@ -11,13 +11,27 @@ See: https://github.com/Jumpscale/0-robot/blob/master/docs/getting_started.md
 ## Using a Docker container
 
 Check script to create a Docker image for 0-robot:
-https://github.com/Jumpscale/0-robot/pull/73/commits/5e8486843cafeb134b1d9cc21a9c5ba23786c392#diff-70b193262828b6511beb01ec3605605d
-
+https://github.com/Jumpscale/0-robot/blob/master/utils/scripts/packages/dockerbuild.py
 
 Create a container:
 ```bash
 docker run --name 0-robot -d -p 192.168.103.254:6600:6600 -v /root/.ssh:/root/.ssh -e data-repo=ssh://git@docs.greenitglobe.com:10022/yves/zrobot3.git -e config-repo=ssh://git@docs.greenitglobe.com:10022/yves/myjsconfig.git -e template-repo=https://github.com/zero-os/0-templates jumpscale/0-robot:latest
 ```
+
+In the Docker container [`dockerentrypoint.py`](https://github.com/Jumpscale/0-robot/blob/master/utils/scripts/packages/dockerentrypoint.py) is used as an ENTRYPOINT that will start 0-robot (`zrobot server start`) using environment variable you passed when starting the container, following environment variables can be passed:
+
+```bash
+-e listen 
+-e data-repo=repo=ssh://git@docs.greenitglobe.com:10022/yves/zrobot3.git
+-e template-repo=https://github.com/zero-os/0-templates
+-e config-repo=ssh://git@docs.greenitglobe.com:10022/yves/myjsconfig.git
+-e debug
+-e telegram-bot-token
+-e telegram-chat-id
+-e auto-push
+-e auto-push-interval
+```
+
 
 
 

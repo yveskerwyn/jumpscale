@@ -26,7 +26,7 @@ jsconfig["fullname"] = "Yves Kerwyn"
 ssh_key_path = "/root/.ssh/id_rsa"
 config_path = "/opt/myconfig"
 
-j.tools.configmanager.init(data=jsconfig, silent=False, configpath=config_path, keypath=ssh_key_path)
+j.tools.configmanager.init(data=jsconfig, silent=True, configpath=config_path, keypath=ssh_key_path)
 ```
 
 This will create:
