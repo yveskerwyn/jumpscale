@@ -12,6 +12,11 @@ Reset:
 js9_config reset
 ```
 
+MAke sure sure your have installed `python-jose`:
+```bash
+pip3 install python-jose
+```
+
 In case you don't have any SSH key yet, create it:
 ```bash
 ssh-keygen -t rsa
@@ -29,10 +34,10 @@ config_path = "/opt/myconfig"
 j.tools.configmanager.init(data=jsconfig, silent=True, configpath=config_path, keypath=ssh_key_path)
 ```
 
-This will create:
-- `main.toml` in `/opt/myconfig`: a configuration repository 
-- `id_rsa.toml` in `/opt/myconfi/j.clients.sshkey`: a configuration instance for the specified SSH key (`/root/.ssh/id_rsa`) that will be used for encrypting all secret configuration data 
-- a configuration instance in `/opt/myconfij.tools.myconfig` 
+This will:
+- Create `main.toml` in `/opt/myconfig/tools.myconfig`: this is the configuration instance for the configuration manager itself  
+- Create `id_rsa.toml` in `/opt/myconfig/j.clients.sshkey`: the configuration instance for the specified SSH key (`/root/.ssh/id_rsa`) that will be used for encrypting/decrypting all secret configuration data
+- Update the `[myconfig]` section in `jumpscale9.toml` setting the value of to the `/opt/myconfig` configuration directory, and 
 
 
 You can also update the `[myconfig]` section in `jumpscale9.toml` as follows, here changing the name of the SSH key to use for the encryption:
@@ -59,9 +64,10 @@ iyo_config = {
 Create a configuration instance for ItsYou.online, using `j.tools.configmanager.configure`:
 ```python
 j.tools.configmanager.configure(location="j.clients.itsyouonline", instance="main", data=iyo_config)
+iyo_client = j.clients.itsyouonline.get(instance='main')
 ```
 
-Or using `j.clients.itsyouonline.get()`:
+Or just use `j.clients.itsyouonline.get()`:
 ```python
 iyo_client = j.clients.itsyouonline.get(instance='main', data=iyo_config, create=True, die=True, interactive=False)
 ```
@@ -79,6 +85,7 @@ ovc_config = {
 Create an OpenvCloud configuration instance using `j.tools.configmanager.configure`:
 ```python
 j.tools.configmanager.configure(location="j.clients.openvcloud", instance="swiss", data=ovc_config)
+ovc_client = j.clients.openvcloud.get(instance="swiss")
 ```
 
 Or using `j.clients.openvcloud.get()`:
@@ -98,7 +105,7 @@ ovc_client = j.clients.openvcloud.get(instance="swiss")
 Create a cloud space:
 ```python
 account_name = "Account_of_Yves"
-vdc_name = "delete-me"
+vdc_name = "4wordpress"
 #location = ovc_client.locations[0]["name"]
 account = ovc_client.account_get(name=account_name, create=False)
 #cloud_space = account.space_get(name=vdc_name, create=True, location=location)
@@ -109,21 +116,22 @@ Create a new SSH key:
 ```python
 import os
 ssh_key_name = "mytestkey1"
-ssh_key_passphrase ='hello'
+#ssh_key_passphrase ='hello'
 ssh_key_path = os.path.expanduser("~/.ssh/{}".format(ssh_key_name))
 sshkey = j.clients.sshkey.key_generate(path=ssh_key_path, passphrase=ssh_key_passphrase, overwrite=False, load=True, returnObj=True)
 ```
 
-> The above will next to creating a new SSH key, also create a new `j.clients.sshkey` configuration instance, but only if `load=True`.
-> In case `load=False`, it is not clear how you can still create an `j.clients.sshkey` configuration instance...
+> The above will next to creating a new SSH key, also create a new `j.clients.sshkey` configuration instance
+> By setting `load=True` the SSH key also gets loaded by the ssh-agent
 
 Check the newly created sshkey on disk:
 ```python
 !ls ~/.ssh 
 ```
+> Make sure at this point that `ssh-agent` is running; this will change, but on March 17 it was still required for creating a VM
 
 ```python
-machine_name = "delete-me"
+machine_name = "4wordpress"
 machine = cloud_space.machine_get(name=machine_name, create=True, sshkeyname=ssh_key_name)
 ```
 
@@ -175,3 +183,13 @@ Create the SSH "connection" configuration instance:
 ssh_connection = j.clients.ssh.get(instance='my-ssh-connection', data=ssh_connection_config, create=True, die=True, interactive=False)
 ```
 
+List all nodes:
+```bash
+js9_node list
+```
+
+
+SSH into a machine:
+```bash
+js9_node ssh -i proxy
+```

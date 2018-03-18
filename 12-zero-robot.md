@@ -18,8 +18,7 @@ Create a container:
 docker run --name 0-robot -d -p 192.168.103.254:6600:6600 -v /root/.ssh:/root/.ssh -e data-repo=ssh://git@docs.greenitglobe.com:10022/yves/zrobot3.git -e config-repo=ssh://git@docs.greenitglobe.com:10022/yves/myjsconfig.git -e template-repo=https://github.com/zero-os/0-templates jumpscale/0-robot:latest
 ```
 
-In the Docker container [`dockerentrypoint.py`](https://github.com/Jumpscale/0-robot/blob/master/utils/scripts/packages/dockerentrypoint.py) is used as an ENTRYPOINT that will start 0-robot (`zrobot server start`) using environment variable you passed when starting the container, following environment variables can be passed:
-
+In the Docker container [`dockerentrypoint.py`](https://github.com/Jumpscale/0-robot/blob/master/utils/scripts/packages/dockerentrypoint.py) is used as an ENTRYPOINT that will start 0-robot (`zrobot server start`) using the environment variables you passed when starting the container, following environment variables can be passed:
 ```bash
 -e listen 
 -e data-repo=repo=ssh://git@docs.greenitglobe.com:10022/yves/zrobot3.git
@@ -31,9 +30,6 @@ In the Docker container [`dockerentrypoint.py`](https://github.com/Jumpscale/0-r
 -e auto-push
 -e auto-push-interval
 ```
-
-
-
 
 Normally the above should start the zrobot... 
 
@@ -228,4 +224,125 @@ zrobot service list
 ```
 
 
+````
+ssh-add <key>
+````
 
+The above is required in order for 0-robot to work
+
+How does the 0-robot know which the loaded keys to use?
+
+```
+zrobot robot list
+```
+
+in case you didn't yet load a ssh key you'll get an error
+
+in case there was not js config repo configured you will be requested to configure/initialize it
+
+> specify the key for encrypting the secret info, i.e. you take id_rsa > this will get copied into 
+~/js9host/cfg/jumpscale9.cfg as a value for the sshkeyname in the section [myconfig]
+> specify full name, email and login name > /opt/cfg/myconfig/j.tools.config/main.toml
+
+```
+zrobot robot connect main http://localhost:6000
+```
+=> a new config instance will get created for 0-robot: /opt/cfg/myconfig/j.clients.zrobot/main.toml
+
+> use `js9_config configure -i elgouna -l j.clients.zrobot` to add as many 0-robot config instances
+
+> you can also create a `./secureconfig` and `./key directort` in the current dir, in that case it will use that as a "sandbox" config manageger
+
+
+```
+js9_config configure -i elgouna -l j.clients.zrobot
+```
+
+```
+zrobot robot blueprint execute
+```
+
+Tested blueprints:
+
+Creating a user:
+```yaml
+services:
+    - github.com/openvcloud/0-templates/openvcloud/0.0.1__myovc:
+        location: 'be-g8-3'
+        address: 'be-g8-3.demo.greenitglobe.com'
+        token: '*************************************************************'
+    - github.com/openvcloud/0-templates/vdcuser/0.0.1__adminss:
+        openvcloud: myovc
+        provider: itsyouonline
+        email: test@g.com
+
+actions:
+      actions: ['install']
+```
+
+Creating an account (1):
+```yaml
+services:
+    - github.com/openvcloud/0-templates/openvcloud/0.0.1__ovc:
+        location: 'be-g8-3'
+        address: 'be-g8-3.demo.greenitglobe.com'
+        token: 'eyJhbGciOiJFUzM4NCIsInR5cCI6IkpXVCJ9.eyJhenAiOiJ3cnpjSXVyZzR6WEVqbEpPQTF6MENYODA2akt4IiwiZXhwIjoxNTIxMzAyNzUxLCJpc3MiOiJpdHN5b3VvbmxpbmUiLCJzY29wZSI6WyJ1c2VyOmFkbWluIl0sInVzZXJuYW1lIjoieHRyZW14In0._ix7xg5LzP0QoL4L89208OuZnBYIMSftFUigWZTwSiqdYSbT3P8kXunD_2ZqXj4OLDN_r59H6wSrTAutkmybQCaxI1drgP9vRv86PioZwEK4EuuUBUrSuIb_b8VbNrTO'
+    - github.com/openvcloud/0-templates/account/0.0.1__adminDatasAccount:
+        openvcloud: ovc
+
+actions:
+      actions: ['install']
+```
+
+
+Creating an account (2):
+```yaml
+services:
+    - github.com/openvcloud/0-templates/openvcloud/0.0.1__ovc:
+        location: 'be-g8-3'
+        address: 'be-g8-3.demo.greenitglobe.com'
+        token: 'eyJhbGciOiJFUzM4NCIsInR5cCI6IkpXVCJ9.eyJhenAiOiJ3cnpjSXVyZzR6WEVqbEpPQTF6MENYODA2akt4IiwiZXhwIjoxNTIxMzAyNzUxLCJpc3MiOiJpdHN5b3VvbmxpbmUiLCJzY29wZSI6WyJ1c2VyOmFkbWluIl0sInVzZXJuYW1lIjoieHRyZW14In0._ix7xg5LzP0QoL4L89208OuZnBYIMSftFUigWZTwSiqdYSbT3P8kXunD_2ZqXj4OLDN_r59H6wSrTAutkmybQCaxI1drgP9vRv86PioZwEK4EuuUBUrSuIb_b8VbNrTO'
+    - github.com/openvcloud/0-templates/vdcuser/0.0.1__user1:
+        provider: itsyouonline
+        email: dslkadjaskl@g.com
+        openvcloud: ovc
+    - github.com/openvcloud/0-templates/account/0.0.1__newacc1:
+        users:
+            - name: adminRobot
+              accesstype: CXDRAU
+        openvcloud: ovc
+
+actions:
+      actions: ['install']
+```
+
+Creating a user (2):
+```yaml
+services:
+    - github.com/openvcloud/0-templates/openvcloud/0.0.1__ovc:
+        location: 'be-g8-3'
+        address: 'be-g8-3.demo.greenitglobe.com'
+        token: 'eyJhbGciOiJFUzM4NCIsInR5cCI6IkpXVCJ9.eyJhenAiOiJ3cnpjSXVyZzR6WEVqbEpPQTF6MENYODA2akt4IiwiZXhwIjoxNTIxMzAyNzUxLCJpc3MiOiJpdHN5b3VvbmxpbmUiLCJzY29wZSI6WyJ1c2VyOmFkbWluIl0sInVzZXJuYW1lIjoieHRyZW14In0._ix7xg5LzP0QoL4L89208OuZnBYIMSftFUigWZTwSiqdYSbT3P8kXunD_2ZqXj4OLDN_r59H6wSrTAutkmybQCaxI1drgP9vRv86PioZwEK4EuuUBUrSuIb_b8VbNrTO'
+    - github.com/openvcloud/0-templates/vdcuser/0.0.1__newuser1:
+
+actions:
+      actions: ['install']
+```
+
+Then create new account, and add newly created user:
+```yaml
+services:
+    - github.com/openvcloud/0-templates/openvcloud/0.0.1__ovc:
+        location: 'be-g8-3'
+        address: 'be-g8-3.demo.greenitglobe.com'
+        token: 'eyJhbGciOiJFUzM4NCIsInR5cCI6IkpXVCJ9.eyJhenAiOiJ3cnpjSXVyZzR6WEVqbEpPQTF6MENYODA2akt4IiwiZXhwIjoxNTIxMzAyNzUxLCJpc3MiOiJpdHN5b3VvbmxpbmUiLCJzY29wZSI6WyJ1c2VyOmFkbWluIl0sInVzZXJuYW1lIjoieHRyZW14In0._ix7xg5LzP0QoL4L89208OuZnBYIMSftFUigWZTwSiqdYSbT3P8kXunD_2ZqXj4OLDN_r59H6wSrTAutkmybQCaxI1drgP9vRv86PioZwEK4EuuUBUrSuIb_b8VbNrTO'
+    - github.com/openvcloud/0-templates/vdcuser/0.0.1__newuser1:
+    - github.com/openvcloud/0-templates/account/0.0.1__newacc3:
+        users:
+            - name: newuser1
+              accesstype: CXDRAU
+        openvcloud: ovc
+
+actions:
+      actions: ['install']
+```
