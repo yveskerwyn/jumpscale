@@ -105,7 +105,7 @@ ovc_client = j.clients.openvcloud.get(instance="swiss")
 Create a cloud space:
 ```python
 account_name = "Account_of_Yves"
-vdc_name = "4wordpress"
+vdc_name = "4wordpress2"
 #location = ovc_client.locations[0]["name"]
 account = ovc_client.account_get(name=account_name, create=False)
 #cloud_space = account.space_get(name=vdc_name, create=True, location=location)
@@ -116,28 +116,29 @@ Create a new SSH key:
 ```python
 import os
 ssh_key_name = "mytestkey1"
-#ssh_key_passphrase ='hello'
+#ssh_key_passphrase ="hello"
 ssh_key_path = os.path.expanduser("~/.ssh/{}".format(ssh_key_name))
-sshkey = j.clients.sshkey.key_generate(path=ssh_key_path, passphrase=ssh_key_passphrase, overwrite=False, load=True, returnObj=True)
+#sshkey = j.clients.sshkey.key_generate(path=ssh_key_path, passphrase=ssh_key_passphrase, overwrite=False, load=True, returnObj=True)
+sshkey = j.clients.sshkey.key_generate(path=ssh_key_path, overwrite=False, load=False, returnObj=True)
 ```
 
+
 > The above will next to creating a new SSH key, also create a new `j.clients.sshkey` configuration instance
-> By setting `load=True` the SSH key also gets loaded by the ssh-agent
+> By setting `load=True` the SSH key also gets loaded by the ssh-agent; which is not needed for creating a machine though
 
 Check the newly created sshkey on disk:
 ```python
 !ls ~/.ssh 
 ```
-> Make sure at this point that `ssh-agent` is running; this will change, but on March 17 it was still required for creating a VM
 
 ```python
-machine_name = "4wordpress"
+machine_name = "4wordpress2"
 machine = cloud_space.machine_get(name=machine_name, create=True, sshkeyname=ssh_key_name)
 ```
 
 Check the node manager:
 ```python
-node = j.tools.nodemgr.get(name, create=False)
+node = j.tools.nodemgr.get(instance=machine_name, create=False)
 node.config.data
 ```
 
@@ -147,16 +148,17 @@ prefab = node.prefab
 
 # make sure the apt-update/upgrade was done & some basic requirements
 prefab.system.base.install()
-prefab.docker.install()
+prefab.virtualization.docker.install()
 ```
 
 Check the (resulting new) SSH "connection" configuration instance that got created
 ```python
 j.clients.ssh.list()
-ssh_connection = j.clients.get(instance="")
+ssh_connection = j.clients.ssh.get(instance="185-15-201-118-2200-root-public")
 ssh_connection
 ```
 
+++++
 Normally you would never create an SSH "connection" configuration instances explicitly, they are automatically created when connecting to nodes, but you can also create them explicitly, as follows, first prepare the configuration data:
 ```python
 ssh_connection_config = {
@@ -183,13 +185,18 @@ Create the SSH "connection" configuration instance:
 ssh_connection = j.clients.ssh.get(instance='my-ssh-connection', data=ssh_connection_config, create=True, die=True, interactive=False)
 ```
 
+
++++
+
 List all nodes:
 ```bash
 js9_node list
 ```
 
 
-SSH into a machine:
+SSH into a machine; this requires that the ssh key is loaded:
 ```bash
 js9_node ssh -i proxy
 ```
+
+

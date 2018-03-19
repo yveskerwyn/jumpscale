@@ -21,9 +21,9 @@ docker run --name 0-robot -d -p 192.168.103.254:6600:6600 -v /root/.ssh:/root/.s
 In the Docker container [`dockerentrypoint.py`](https://github.com/Jumpscale/0-robot/blob/master/utils/scripts/packages/dockerentrypoint.py) is used as an ENTRYPOINT that will start 0-robot (`zrobot server start`) using the environment variables you passed when starting the container, following environment variables can be passed:
 ```bash
 -e listen 
--e data-repo=repo=ssh://git@docs.greenitglobe.com:10022/yves/zrobot3.git
--e template-repo=https://github.com/zero-os/0-templates
--e config-repo=ssh://git@docs.greenitglobe.com:10022/yves/myjsconfig.git
+-e data_repo=repo=ssh://git@docs.greenitglobe.com:10022/yves/zrobot3.git
+-e template_repo=https://github.com/zero-os/0-templates
+-e config_repo=ssh://git@docs.greenitglobe.com:10022/yves/myjsconfig.git
 -e debug
 -e telegram-bot-token
 -e telegram-chat-id
@@ -181,9 +181,6 @@ vim bp.yaml
 Here's the blueprint for creating a VDC:
 ```yaml
 services:
-    - github.com/openvcloud/0-templates/sshkey/0.0.1__bootstrap_vm2_key:
-        path: "/root/.ssh/bootstrap_vm2_key"
-
     - github.com/openvcloud/0-templates/openvcloud/0.0.1__switzerland:
     
     - github.com/openvcloud/0-templates/vdc/0.0.1__myvdc:
@@ -286,7 +283,7 @@ services:
     - github.com/openvcloud/0-templates/openvcloud/0.0.1__ovc:
         location: 'be-g8-3'
         address: 'be-g8-3.demo.greenitglobe.com'
-        token: 'eyJhbGciOiJFUzM4NCIsInR5cCI6IkpXVCJ9.eyJhenAiOiJ3cnpjSXVyZzR6WEVqbEpPQTF6MENYODA2akt4IiwiZXhwIjoxNTIxMzAyNzUxLCJpc3MiOiJpdHN5b3VvbmxpbmUiLCJzY29wZSI6WyJ1c2VyOmFkbWluIl0sInVzZXJuYW1lIjoieHRyZW14In0._ix7xg5LzP0QoL4L89208OuZnBYIMSftFUigWZTwSiqdYSbT3P8kXunD_2ZqXj4OLDN_r59H6wSrTAutkmybQCaxI1drgP9vRv86PioZwEK4EuuUBUrSuIb_b8VbNrTO'
+        token: '***'
     - github.com/openvcloud/0-templates/account/0.0.1__adminDatasAccount:
         openvcloud: ovc
 
@@ -301,7 +298,7 @@ services:
     - github.com/openvcloud/0-templates/openvcloud/0.0.1__ovc:
         location: 'be-g8-3'
         address: 'be-g8-3.demo.greenitglobe.com'
-        token: 'eyJhbGciOiJFUzM4NCIsInR5cCI6IkpXVCJ9.eyJhenAiOiJ3cnpjSXVyZzR6WEVqbEpPQTF6MENYODA2akt4IiwiZXhwIjoxNTIxMzAyNzUxLCJpc3MiOiJpdHN5b3VvbmxpbmUiLCJzY29wZSI6WyJ1c2VyOmFkbWluIl0sInVzZXJuYW1lIjoieHRyZW14In0._ix7xg5LzP0QoL4L89208OuZnBYIMSftFUigWZTwSiqdYSbT3P8kXunD_2ZqXj4OLDN_r59H6wSrTAutkmybQCaxI1drgP9vRv86PioZwEK4EuuUBUrSuIb_b8VbNrTO'
+        token: '***'
     - github.com/openvcloud/0-templates/vdcuser/0.0.1__user1:
         provider: itsyouonline
         email: dslkadjaskl@g.com
@@ -322,7 +319,7 @@ services:
     - github.com/openvcloud/0-templates/openvcloud/0.0.1__ovc:
         location: 'be-g8-3'
         address: 'be-g8-3.demo.greenitglobe.com'
-        token: 'eyJhbGciOiJFUzM4NCIsInR5cCI6IkpXVCJ9.eyJhenAiOiJ3cnpjSXVyZzR6WEVqbEpPQTF6MENYODA2akt4IiwiZXhwIjoxNTIxMzAyNzUxLCJpc3MiOiJpdHN5b3VvbmxpbmUiLCJzY29wZSI6WyJ1c2VyOmFkbWluIl0sInVzZXJuYW1lIjoieHRyZW14In0._ix7xg5LzP0QoL4L89208OuZnBYIMSftFUigWZTwSiqdYSbT3P8kXunD_2ZqXj4OLDN_r59H6wSrTAutkmybQCaxI1drgP9vRv86PioZwEK4EuuUBUrSuIb_b8VbNrTO'
+        token: '***'
     - github.com/openvcloud/0-templates/vdcuser/0.0.1__newuser1:
 
 actions:
