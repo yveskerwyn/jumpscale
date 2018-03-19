@@ -90,7 +90,7 @@ actions:
 ```
 
 <a id="wordpress"></a>
-# Wordpress Site
+## Wordpress Site
 
 
 Creating a Wordpress site in the VDC `my-vdc` is done using the following blueprint:
