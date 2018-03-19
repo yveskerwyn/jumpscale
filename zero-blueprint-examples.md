@@ -2,6 +2,7 @@ Example Zero-Robot Blueprints
 
 - [Virtual Datacenter](#vdc)
 - [Kubernetes Cluster](#kubernetes)
+- [S3 Storage](#s3)
 - [Wordpress Site](#wordpress)
 
 <a id="vdc"></a>
@@ -64,34 +65,59 @@ What you see:
 - in the first section a SSH key is defined and label as `my-key`, this SSH key needed for accessing the virtual machines of the Kubernetes node
 - the Kubernetes cluster itself is defined to be hosted in  `my-vdc` and only have one worker node
 
+
+<a id="s3"></a>
+## S3 Storage
+
+S3 can be deployed directly in the VDC, or as pods into to Kubernetes cluster.
+
+The blueprint for deploying on Kubernetes `my-s3`:
+```yaml
+services:
+    - github.com/openvcloud/0-templates/s3/0.0.1__my-s3:
+        #vdc: my-vdc
+        kubernetes: my-kubernetes
+        accesskey_: '***'
+        address: 'ns3003266.ip-37-59-7.eu'
+        bucket: 'itenv'
+        bucket_ok: false
+        port: 9000
+        secretkey_: '***'
+
+actions:
+   - template: github.com/openvcloud/s3/setup/0.0.1
+     actions: ['install']
+```
+
 <a id="wordpress"></a>
 # Wordpress Site
 
 
-Creating a Kubernetes server in the VDC `my-vdc` is done using the following blueprint:
+Creating a Wordpress site in the VDC `my-vdc` is done using the following blueprint:
 ```yaml
 services:
-    vdc: my-vdc
-    wordpress_title: "Herbert Blog"
-    admin_user_: '***'
-    admin_password_: '***'
-    admin_email: "info@threefoldtoken.com"
-    db_name: 'wordpress'
-    db_user: 'admin'
-    db_password_: "***"
-    #wordpress_path: "/opt/var/data/www"
-    plugins: 
-        - 'rest-api'
-        - 'rest-api-meta-endpoints'
-        - "https://github.com/WP-API/Basic-Auth/archive/master.zip"
+    - github.com/openvcloud/0-templates/wordpress/0.0.1__my-vdc:
+        vdc: my-vdc
+        wordpress_title: "Herbert Blog"
+        admin_user_: '***'
+        admin_password_: '***'
+        admin_email: "info@threefoldtoken.com"
+        db_name: 'wordpress'
+        db_user: 'admin'
+        db_password_: "***"
+        #wordpress_path: "/opt/var/data/www"
+        plugins: 
+            - 'rest-api'
+            - 'rest-api-meta-endpoints'
+            - "https://github.com/WP-API/Basic-Auth/archive/master.zip"
 
-    s3_instance_name: 'my-s3'
-    s3_object_name: 'Divi.zip'
-    s3_bucket_name: 'itenv'
-    
-    #theme_path: '/tmp/themes/divi'
-    thema_name: 'Divi'
-    server_donain: 'herbert.b.grid.tf'
+        s3_instance_name: 'my-s3'
+        s3_object_name: 'Divi.zip'
+        s3_bucket_name: 'itenv'
+        
+        #theme_path: '/tmp/themes/divi'
+        thema_name: 'Divi'
+        server_donain: 'herbert.b.grid.tf'
 
 actions:
    - template: github.com/openvcloud/wordpress/setup/0.0.1
