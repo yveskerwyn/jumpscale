@@ -1,4 +1,11 @@
-# Setup a Kubernetes cluster
+# Kubernetes
+
+
+- [Setup](#setup)
+- [JumpScale Client](#jumpscale-client)
+
+<a> id=setup></a>
+## Setup a Kubernetes cluster
 
 Create a new VM.
 
@@ -138,3 +145,14 @@ worker-1
 master
 k8s-little-helper
 ```
+
+
+<a> id=jumpscale-client></a>
+## JumpScale client for Wordpress
+
+Also see: See: https://kubernetes.io/docs/tasks/access-application-cluster/access-cluster/
+
+https://github.com/Jumpscale/lib9/tree/development/JumpScale9Lib/clients/kubernetes
+
+
+

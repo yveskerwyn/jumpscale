@@ -12,16 +12,72 @@ Reset:
 js9_config reset
 ```
 
-MAke sure sure your have installed `python-jose`:
-```bash
-pip3 install python-jose
+This will reset all configuration instances in your configuration repository. JumpScale knows the location of the configuration repository by first checking for sandboxed secure configuration instances in your current directory, and if not found check the value of the `path` key in the `[myconfig]` section of your JumpScale configuration file, located in `{j.dirs.HOSTCFGDIR}/cfg/jumpscale.toml}.` 
+
+In case no value was set yet for the `path` key in the `[myconfig]` section of the JumpScale configuration file, JumpScale will walk over all Git repositories it finds under `$HOMEDIR/code/$type/$account/$reponame` and look for `.jsconfig`, and only in case it finds one it will set `path` value in the JumpScale configuration file to the repository where it found `.jsconfig`. In case no repository could be found, JumpScale will set the `path` value to the default `{j.dirs.CFGDIR}/myconfig`.
+
+See [https://github.com/Jumpscale/core9/blob/development/docs/config/config_file_locations.md] for more details about this.
+
+Optionally also reset the `path` value in the JumpScale configuration file - using JumpScale:
+```python
+# Check the current value
+j.core.state.config_js
+j.core.state.configSetInDict("myconfig", "sshkeyname", "")
+j.core.state.configSetInDict("myconfig", "path", "")
 ```
 
-In case you don't have any SSH key yet, create it:
+In case you don't have any SSH key yet, create it - from the command line:
 ```bash
 ssh-keygen -t rsa
 ```
 
+Or using JumpScale:
+```python
+j.tools.prefab.local.system.ssh.keygen(user='root', name='id_rsa')
+```
+
+Create a new directory for your configuration repository and initialize it as a Git repository- from the command line:
+```bash
+mkdir -p /opt/code/docs/yves/myconfig
+cd /opt/code/docs/yves/myconfig
+git init
+```
+
+> Note that the configuration repository needs to be created in a directory with following parent structure `$somewhere/code/$type/$account/$reponame`.
+
+Then initialize the configuration repository - from the command line:
+```bash
+touch .jsconfig
+js9_config init
+```
+
+If you add the `-p` (`--path`) option the `.jsconfig` file is auto-created, and it also allows you initialize any Git repository, not just the current. In case you did not create the `.jsconfig` file and didn't specify the path to the configuration repository, JumpScale will check the value of the `path` key in the `[myconfig]` section of your the JumpScale configuration file (`{j.dirs.HOSTCFGDIR}/cfg`, where `{j.dirs.HOSTCFGDIR}` defaults to `~/js9host`), this value typically defaults to `{j.dirs.CFGDIR}/myconfig`; `{j.dirs.CFGDIR}` defaults to `/opt/`.
+
+This will bring up three interactive screens,
+- `j.clients.sshkey/id_rsa.toml`
+- `j.tools.myconfig/main.toml`
+- `j.tools.myconfig/main.toml`
+
+first asking you to choose which SSH key you want to use - in case you have more than one SSH key in `~/.ssh/id_rsa`.
+
+In case you have only one key you will be asked to confirm `(y/n)` that you want to use this key.
+
+Or in order to run it silently, not popping up the interaction, use the `-s` (`--silent`) option in combination with the `-k` (`--key`) option:
+```bash
+js9_config init --silent --key ~/.ssh/id_rsa
+```
+
+In case you only have one key in `~/.ssh/` you can omit the `-k` option:
+```bash
+js9_config init -s
+```
+
+In order to initialize using JumpScale, first make sure `python-jose` is installed:
+```bash
+pip3 install python-jose
+```
+
+And here how to initialize the configuration repository:
 ```python
 jsconfig = {}
 jsconfig["email"] = "yves@gig.tech"
@@ -34,10 +90,11 @@ config_path = "/opt/myconfig"
 j.tools.configmanager.init(data=jsconfig, silent=True, configpath=config_path, keypath=ssh_key_path)
 ```
 
-This will:
-- Create `main.toml` in `/opt/myconfig/tools.myconfig`: this is the configuration instance for the configuration manager itself  
-- Create `id_rsa.toml` in `/opt/myconfig/j.clients.sshkey`: the configuration instance for the specified SSH key (`/root/.ssh/id_rsa`) that will be used for encrypting/decrypting all secret configuration data
-- Update the `[myconfig]` section in `jumpscale9.toml` setting the value of to the `/opt/myconfig` configuration directory, and 
+This will create two configuration instances:
+- `/opt/myconfig/j.tools.myconfigmain.toml`: the configuration instance for the configuration manager itself  
+- `/opt/myconfig/j.clients.sshkey/id_rsa.toml`: the configuration instance for the specified SSH key (`/root/.ssh/id_rsa`) that will be used for encrypting/decrypting all secret configuration data
+
+As result also the `[myconfig]` section in `jumpscale9.toml` setting the value of to the `/opt/myconfig` configuration directory, and 
 
 
 You can also update the `[myconfig]` section in `jumpscale9.toml` as follows, here changing the name of the SSH key to use for the encryption:
