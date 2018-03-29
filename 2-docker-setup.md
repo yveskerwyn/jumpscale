@@ -1,26 +1,42 @@
 # Docker setup
 
-- [Variables](#vars)
+
+- [ItsYou.online](#iyo)
+- [Set variables](#vars)
 - [Create Docker containers](#create-containers)
 - [Add the AYS templates](#ays-templates)
 
+
+<a id="iyo"></a>
+## ItsYou.online
+
+Create an ItsYou.online organization, and create an API access key:
+- Callback URL http://<public-ip-address>:8200
+- Check the option to enable client credentials grant type usage
+
+
 <a id="vars"></a>
-## Variables
+## Set variables
 
 ```bash
 export js_branch="9.2.1"
 export docker_hub_username="yveskerwyn"
-export iyo_organization="ays-organizations.docker-on-mac"
+export iyo_organization="<check ItsYou.online>"
+export external_ip_address="195.134.212.26"
+export redirect_url="http://$external_ip_address:8200"
+export portal_client_id=iyo_organization
+export portal_secret="<check ItsYou.online>"
 ```
-
 
 <a id="create-containers"></a>
 ## Create containers
 
+Install Docker: https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-docker-ce-1
+
 In what follows we will create a Docker container for:
 - [AYS Server](#ays-container)
 - [AYS Portal](portal-container)
-- [Reverse-proxy Server](todo)
+- [Reverse-proxy Server](#caddy)
 
 
 <a id="ays-container"></a>
@@ -28,7 +44,6 @@ In what follows we will create a Docker container for:
 
 Run (= create + start) a Docker container with the AYS server image:
 ```bash
-export external_ip_address="195.134.212.26"
 docker run -d --name ays-server -p "5000:5000" -e organization=$iyo_organization -e external_ip_address=$external_ip_address $docker_hub_username/ays_server:$js_branch
 ```
 
@@ -37,33 +52,12 @@ Check the container:
 docker exec -it ays-server bash
 ```
 
-In case you need to manually run the `docker-entrypoint.sh`:
+Check that AYS running in a TMUX session:
 ```bash
-apt-get update
-apt-get install -y vim
-vim /docker-entrypoint.sh
-echo $external_ip_address
-echo $organization
-/docker-entrypoint.sh
+tmux at
 ```
 
-Or manually from js9:
-```python
-import os
-j.clients.redis.start4core()
-j.tools.prefab.local.js9.atyourservice.install(branch='9.2.1')
-org=os.environ["organization"]
-external_ip_address=os.environ["external_ip_address"]
-j.tools.prefab.local.js9.atyourservice.configure(production=True, organization=org, restart=False, host="0.0.0.0", port=5000)
-public_ays_url = "http://{}:5000".format(external_ip_address)
-j.tools.prefab.local.js9.atyourservice.configure_api_console(url=public_ays_url)
-j.tools.prefab.local.js9.atyourservice.start()
-```
-
-Check:
-- Updated `baseurl`: `vim /opt/code/github/jumpscale/ays9/JumpScale9AYS/ays/server/apidocs/api.raml`
-- Updated AYS configuration: `vim ~/js9host/cfg/jumpscale9.toml`
-- AYS is running: `tmux at`
+(`CTRL+B D` to exit the TMUX session)
 
 
 <a id="portal-container"></a>
@@ -79,18 +73,20 @@ This IP address needs to be passed as the value for the environment variable `ay
 Run (= create + start) a Docker container with the AYS portal image:
 ```bash
 export ays_internal_ip_address="172.17.0.2"
-export redirect_url="http://$external_ip_address:8200"
-export portal_client_id="ays-organizations.docker-on-mac"
-export portal_secret="<check ItsYou.online>"
 docker run -d --name ays-portal -p "8200:8200" -e ays_internal_ip_address=$ays_internal_ip_address -e external_ip_address=$external_ip_address -e portal_client_id=$portal_client_id -e portal_secret=$portal_secret -e redirect_url=$redirect_url -e organization=$iyo_organization $docker_hub_username/ays_portal:$js_branch
 ```
 
-> Make to update the callback URL in ItsYou.online.
+> Make sure to update the callback URL in ItsYou.online.
 
 Check the container:
 ```bash
 docker exec -it ays-portal bash
 ```
+
+<a id="caddy"></a>
+### Create and start Docker container for Caddy
+
+@TODO
 
 
 <a id="ays-templates"></a>
