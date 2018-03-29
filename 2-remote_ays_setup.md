@@ -148,7 +148,7 @@ ays_host.prefab.js9.atyourservice.install(branch=branch)
 
 Start the AYS server:
 ```python
-ays_host.prefab.js9.atyourservice.start(host="0.0.0.0")
+ays_host.prefab.js9.atyourservice.start()
 ```
 
 
@@ -304,12 +304,13 @@ Two levels of ItsYou.online integration:
 
 Configure the AYS server to only accept http/https requests with a JWT created for the organization created above, or for a user who's member of this organization:
 ```python
-ays_host.prefab.js9.atyourservice.configure(production=True, organization=ays_clients_org_name, restart=True)
+ays_host.prefab.js9.atyourservice.configure(production=True, organization=ays_clients_org_name, restart=True, host="0.0.0.0", port=5000)
 ```
 
 This will:
 - Create the `[ays]` section in `jumpscale9.toml` and create a key `production` which is set to true 
 - Create the `[ays.oauth]` section under which the values of the keys `jwt_key` (currently hardcoded; so staging is not supported; or you need to change it manually) and `organization` are set
+- Restart AYS
 
 Here's is the code AYS uses to check the JWT:
 https://github.com/Jumpscale/ays9/blob/master/JumpScale9AYS/ays/server/oauth2_itsyouonline.py#L35
@@ -336,13 +337,7 @@ organization = "ays-server-clients-org"
 jwt_key = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAES5X8XrfKdx9gYayFITc89wad4usrk0n27MjiGYvqalizeSWTHEpnd7oea9IQ8T5oJjMVH5cc0H5tFSKilFFeh//wngxIyny66+Vq5t5B0V0Ehy01+2ceEon2Y0XDkIKv"
 ```
 
-Restart the AYS Server:
-```python
-ays_host.prefab.js9.atyourservice.stop()
-ays_host.prefab.js9.atyourservice.start(host="0.0.0.0")
-```
-
-In order to test is, first get the API access key secret:
+In order to test this, first get the API access key secret:
 ```python
 ays_clients_org = iyo_user.organizations.get(global_id=ays_clients_org_name)
 ays_clients_org_api_key = ays_clients_org.api_keys.get(label=api_key_label)

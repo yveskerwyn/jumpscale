@@ -51,7 +51,7 @@ j.tools.prefab.local.js9.atyourservice.install(branch=branch)
 
 Start the AYS server:
 ```python
-j.tools.prefab.local.js9.atyourservice.start(host="0.0.0.0")
+j.tools.prefab.local.js9.atyourservice.start()
 ```
 
 Add a port forward for the AYS server - to be deleted later what Caddy is added:
@@ -238,7 +238,7 @@ Two levels of ItsYou.online integration:
 
 Configure the AYS server to only accept http/https requests with a JWT created for the organization created above, or for a user who's member of this organization:
 ```python
-j.tools.prefab.local.js9.atyourservice.configure(production=True, organization=ays_clients_org_name, restart=True)
+j.tools.prefab.local.js9.atyourservice.configure(production=True, organization=ays_clients_org_name, restart=True, host="0.0.0.0", port=5000)
 ```
 
 This will:
@@ -273,7 +273,7 @@ jwt_key = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAES5X8XrfKdx9gYayFITc89wad4usrk0n27MjiG
 Restart the AYS Server:
 ```python
 j.tools.prefab.local.js9.atyourservice.stop()
-j.tools.prefab.local.js9.atyourservice.start(host="0.0.0.0")
+j.tools.prefab.local.js9.atyourservice.start()
 ```
 
 In order to test is, first get the API access key secret:
