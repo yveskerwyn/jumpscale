@@ -5,7 +5,7 @@ See:
 - https://github.com/Jumpscale/core9/blob/development/docs/config/configmanager.md
 
 
-Create a git repo, go there and execute:
+Create a Git repo, go there and execute:
 ```bash
 js9_config sandbox
 ```
@@ -18,9 +18,6 @@ j.clients.sshkey
 j.tools.myconfig
 .jsconfig
 ```
-
-
-
 
 Make sure you have the `secureconfig` and `key` directories.
 

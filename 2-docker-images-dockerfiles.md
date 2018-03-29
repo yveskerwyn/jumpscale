@@ -1,4 +1,4 @@
-# Creating Docker images
+# Creating Docker Images using Docker Files
 
 - [Docker Setup](#docker)
 - [Variables](#vars)
