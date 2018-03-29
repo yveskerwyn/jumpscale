@@ -1,9 +1,46 @@
 # 0-robot Client
 
+<a id="start-robot"></a>
+## Have 0-robot running
+
+Prepare by:
+- Making sure you have a Zero-Robot `data` repository and a JumpScale `configuration` repository available
+- Loading a SSH key named `id_rsa`
+
+Clone the 0-robot repository:
+```bash
+cd /opt/code/github/jumpscale
+git clone git@github.com:Jumpscale/0-robot.git
+```
+
+Install Zero-Robot and all dependencies:
+```bash
+cd /opt/code/github/jumpscale/0-robot
+export ZROBOTBRANCH="master"
+git checkout $ZROBOTBRANCH
+pip install -r requirements.txt
+pip install .
+```
+
+Set environment variables:
+```bash
+config_repo="ssh://git@docs.greenitglobe.com:10022/yves/jsconfig.git"
+data_repo="ssh://git@docs.greenitglobe.com:10022/yves/robotdata.git"
+template_repo_openvcloud="https://github.com/openvcloud/0-templates.git"
+internal_ip_address="$(ip route get 8.8.8.8 | awk '{print $NF; exit}')"
+port_forwarding="$internal_ip_address:8000:6600"
+```
+
+Start 0-robot locally:
+```bash
+zrobot server start -D $data_repo -C $config_repo -T $template_repo_openvcloud --auto-push --auto-push-interval 30
+```
+
+
 <a id="config-instance"></a>
 ## 0-robot configuration instances
 
-Check for an existing 0-robot config instance
+Check for an existing 0-robot config instance:
 ```python
 j.clients.zrobot.list()
 ```
@@ -39,6 +76,38 @@ Get the JWT for interacting with OpenvCloud:
 
 <a id="zrobot-services"></a>
 ## Create the 0-robot services
+
+List 0-robot services:
+```python
+zrcl1.api.services.listServices()
+```
+
+Or better use the wrapper client:
+```python
+robot = j.clients.zrobot.robots['main']
+robot.services.names
+```
+
+Get one of them:
+```python
+s = robot.services.get(name="be-gen-1")
+```
+
+List all actions available for this service:
+```python
+s.actions
+```
+
+Delete the service:
+```python
+s.delete()
+```
+
+Create an OpenvCloud client service:
+```python
+
+
+```
 
 Create a VDC service:
 ```python
