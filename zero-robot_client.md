@@ -1,5 +1,10 @@
 # 0-robot Client
 
+Make sure:
+- Your configuration manager is initialized
+- The SSH key used by the config manager is associated with your Git server account
+
+
 <a id="start-robot"></a>
 ## Have 0-robot running
 
@@ -9,31 +14,37 @@ Prepare by:
 
 Clone the 0-robot repository:
 ```bash
-cd /opt/code/github/jumpscale
-git clone git@github.com:Jumpscale/0-robot.git
+mkdir -p /opt/code/github/zero-os
+cd /opt/code/github/zero-os
+git clone https://github.com/zero-os/0-robot.git
 ```
 
 Install Zero-Robot and all dependencies:
 ```bash
-cd /opt/code/github/jumpscale/0-robot
+cd /opt/code/github/zero-os/0-robot
 export ZROBOTBRANCH="master"
 git checkout $ZROBOTBRANCH
 pip install -r requirements.txt
 pip install .
 ```
 
+Create two private Git repositories:
+- One for your JumpScale configuration instances
+- Another one for the 0-robot data
+
 Set environment variables:
 ```bash
-config_repo="ssh://git@docs.greenitglobe.com:10022/yves/jsconfig.git"
+config_repo="ssh://git@docs.greenitglobe.com:10022/yves/jsconfig-robot.git"
 data_repo="ssh://git@docs.greenitglobe.com:10022/yves/robotdata.git"
 template_repo_openvcloud="https://github.com/openvcloud/0-templates.git"
-internal_ip_address="$(ip route get 8.8.8.8 | awk '{print $NF; exit}')"
-port_forwarding="$internal_ip_address:8000:6600"
+export internal_ip_address="$(ip route get 8.8.8.8 | awk '{print $NF; exit}')"
+#port_forwarding="$internal_ip_address:8000:6600"
 ```
 
-Start 0-robot locally:
+Start 0-robot locally - in the background:
 ```bash
-zrobot server start -D $data_repo -C $config_repo -T $template_repo_openvcloud --auto-push --auto-push-interval 30
+zrobot server start -D $data_repo -C $config_repo -T $template_repo_openvcloud --auto-push --auto-push-interval 30 &
+<ENTER>
 ```
 
 
@@ -47,8 +58,8 @@ j.clients.zrobot.list()
 
 If there is an existing one, get it and check the configuration, for the instance `main`:
 ```python
-zrcl1 = j.clients.zrobot.get(instance="main")
-zrcl1.config
+zrcl = j.clients.zrobot.get(instance="main")
+zrcl.config
 ```
 
 Example output:
@@ -61,12 +72,21 @@ config:j.clients.zrobot:main
     url = 'http://192.168.103.251:6600'
 ```
 
-Optionally create a new config instance for another 0-robot:
+Optionally create a new config instance:
 ```python
+import os
+internal_ip_address = os.environ["internal_ip_address"]
+zero_robot_port = 6600
 zr_config = {}
-zr_config["jwt_"] = ''
-zr_config["url"] = 'http://192.168.103.251:8000'
-zrcl2 = j.clients.zrobot.get(instance="docker", data=zr_config, create=True, interactive=False)
+#zr_config["jwt_"] = ''
+zr_config["url"] = '{}:{}'.format(internal_ip_address, zero_robot_port)
+zrcl = j.clients.zrobot.get(instance="main", data=zr_config, create=True, interactive=False)
+```
+
+In order to update the configuration:
+```python
+zr_cfg = zrcl.config
+zr_cfg.data_set(key="url", val="http://localhost:6600", save=True)
 ```
 
 Get the JWT for interacting with OpenvCloud:
@@ -79,7 +99,7 @@ Get the JWT for interacting with OpenvCloud:
 
 List 0-robot services:
 ```python
-zrcl1.api.services.listServices()
+zrcl.api.services.listServices()
 ```
 
 Or better use the wrapper client:
@@ -103,34 +123,59 @@ Delete the service:
 s.delete()
 ```
 
+Variables for using the OpenvCloud templates:
+```python
+OVC_TEMPLATE_UID = "github.com/openvcloud/0-templates/openvcloud/0.0.1"
+ACCOUNT_TEMPLATE_UID = "github.com/openvcloud/0-templates/account/0.0.1"
+VDC_TEMPLATE_UID = "github.com/openvcloud/0-templates/vdc/0.0.1"
+
+ovc_location = "ch-gen-1"
+ovc_address = "ch-gen-1.gig.tech"
+ovc_jwt = "eyJhbGciOiJFUzM4NCIsInR5cCI6IkpXVCJ9.eyJhenAiOiJlMnpsTi03U0M2N3RhdjN0UlJuZG9VQUd4a1U1IiwiZXhwIjoxNTIyNDE4ODUzLCJpc3MiOiJpdHN5b3VvbmxpbmUiLCJzY29wZSI6WyJ1c2VyOmFkbWluIl0sInVzZXJuYW1lIjoieXZlcyJ9.vPkJdNDF-y0I0P4j9rPDnh7KCN0t_cwVsdtmqC4Hrsd0XgactnUym6sOzKv5qpOIsxI9FqpscpkaM0e_6roU1UU3gYNuR6aySjthTzSXkbClGywoSZJf2ywya6xXBBdg"
+
+ovc_service_name = "ch-gen-1"
+ovc_account_name = "Account_of_Yves"
+vdc_name = "test-vdc"
+```
+
 Create an OpenvCloud client service:
 ```python
+ovc_client_data = {}
+ovc_client_data["location"] = ovc_location
+ovc_client_data["address"] = ovc_address
+ovc_client_data["token"] = ovc_jwt
 
+ovc_service = robot.services.create(template_uid=OVC_TEMPLATE_UID, service_name=ovc_service_name, data=ovc_client_data)
+```
 
+Create an OpenvCloud account service:
+```python
+ovc_account_data = {}
+ovc_account_data["description"] = "test"
+ovc_account_data["openvcloud"] = ovc_service_name
+ovc_account_data["location"] = ovc_location
+account_service = robot.services.create(template_uid=ACCOUNT_TEMPLATE_UID , service_name=ovc_account_name, data=ovc_account_data)
 ```
 
 Create a VDC service:
 ```python
 ovc_account_service_name = "Account_of_Yves"
 vdc_name = "test-vdc"
-ovc_location = "ch-gen-1"
+ovc_location = ovc_location
 
 vdc_data = {}
 vdc_data["account"] = ovc_account_service_name
 vdc_data["location"] = ovc_location
 #vdc_data["VdcUser"] = ...
-
-j.clients.zrobot.robots
-r = j.clients.zrobot.robots['main']
-VDC_TEMPLATE_UID = "github.com/openvcloud/0-templates/vdc/0.0.1"
-vdc_service = r.services.create(template_uid=VDC_TEMPLATE_UID, service_name="test-vdc", data=vdc_data)
+vdc_service = robot.services.create(template_uid=VDC_TEMPLATE_UID, service_name=vdc_name, data=vdc_data)
 ```
 
 Install the VDC:
 ```python
+ovc_service.schedule_action(action="install")
+account_service.schedule_action(action="install")
 vdc_service.schedule_action(action="install")
 ```
-
 
 <a id="blueprints"></a>
 ## Using blueprints

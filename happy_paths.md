@@ -1,11 +1,124 @@
 # Happy Paths
 
-- [Starting from zero](#from-zero)
+- [Install JumpScale](#install-js)
+- [Create a SSH key](#ssh-key)
+- [Initialize the Configuration Manager](#from-zero)
 - [Creating a virtual machine ready for hosting Docker containers](#create-vm)
 
 
-<a id="from-zero"></a>
-## Starting from zero
+@ TODO
+check:
+```
+js9_config list -d -u
+```
+
+<a id="install-js"></a>
+## Install JS
+
+See https://github.com/Jumpscale/bash/tree/development
+
+```bash
+curl https://raw.githubusercontent.com/Jumpscale/bash/development/install.sh?$RANDOM > /tmp/install.sh;bash /tmp/install.sh
+source ~/.bashrc
+export JS9BRANCH=development
+ZInstall_host_js9_full
+```
+
+<a id="ssh-key"></a>
+## Create SSH key
+
+The JumpScale configuration manager will encrypt all secret configuration data with an SSH private key of choice.
+
+In case you don't have any SSH key yet, create it - from the command line:
+```bash
+ssh-keygen -t rsa
+```
+
+Or using JumpScale:
+```python
+j.tools.prefab.local.system.ssh.keygen(user='root', name='id_rsa')
+```
+
+@TODO make sure to associate this key to your Git server account
+
+
+<a id="init-config"></a>
+## Initialize the Configuration Manager
+
+At this point the JumpScale configuration manager is not yet initialized, as you can see in the JumpScale configuration file, `{j.dirs.HOSTCFGDIR}/cfg/jumpscale9.toml}`:
+```toml
+[myconfig]
+giturl = ""
+path = ""
+sshkeyname = ""
+```
+
+Or from JumpScale:
+```python
+j.core.state.config_js["myconfig"]
+{'giturl': '', 'path': '', 'sshkeyname': ''}
+```
+
+Options to initialize:
+- using `js9_config check`
+- using `js9_config init` w/o options
+- using `js9_config init` w options
+
+using `js9_config check``
+- it will check for keys in ~/.ssh
+- if more then one is found it will ask which to use
+- if only one found it will load that one in ssh-agent
+- it will then ask to use loaded key as encryption key
+- Git based or just local?
+- if Git based, you need to specify Git URL, e.g. `ssh://git@docs.grid.tf:7022/yves/jsconfig.git`
+- then you will be asked to fill out config data for `j.tools.myconfig`: `email`, `fullname` and `login_name`
+- then it will ask to use chosen key to encrypt
+- And finally you'll get:
+```
+configmanager:
+
+- path: /opt/code/docs/yves/jsconfig
+- keyname: id_rsa
+- is sandbox: False
+- sshagent loaded: True
+- key in sshagent: False
+```
+
+to reset:
+```bash
+rm -rf /opt/code/docs/yves/jsconfig
+j.core.state.configSetInDict("myconfig", "path", "")
+j.core.state.configSetInDict("myconfig", "sshkeyname", "")
+j.core.state.configSetInDict("myconfig", "giturl", "")
+```
+
+In order to initialize execute `js9_config init` from the command line:
+```bash
+configpath="~/opt/code/github/yveskerwyn/jsconfig"
+keypath="~/.ssh/id_rsa"
+js9_config init --path $configpath --key $keypath
+```
+
+This will bring up two interactive screens:
+- one for `j.clients.sshkey/id_rsa.toml`
+- one for `j.tools.myconfig/main.toml`
+
+Check the result:
+```bash
+js9_config check
+
+configmanager:
+
+- path: ~/opt/code/github/yveskerwyn/jsconfig
+- keyname: id_rsa
+- is sandbox: False
+- sshagent loaded: True
+- key in sshagent: True
+```
+
+Alternatively you can also use the `--silent` (`-s`) option in order to have JumpScale (silently) automatically figure our the configuration; in that case make sure you have the SSK key loaded...
+
+
 
 Reset:
 ```bash
@@ -17,7 +130,7 @@ This will:
 - Reinitialize your configuration repository - allowing you to select/create a new SSH key that gets loaded by ssh-agent
 
 
-JumpScale knows the location of the configuration repository by first checking for sandboxed secure configuration instances in your current directory, and if not found check the value of the `path` key in the `[myconfig]` section of your JumpScale configuration file, located in `{j.dirs.HOSTCFGDIR}/cfg/jumpscale.toml}.` 
+JumpScale knows the location of the configuration repository by first checking for sandboxed secure configuration instances in your current directory, and if not found check the value of the `path` key in the `[myconfig]` section of your JumpScale configuration file, located in `{j.dirs.HOSTCFGDIR}/cfg/jumpscale9.toml}`. 
 
 In case no value was set yet for the `path` key in the `[myconfig]` section of the JumpScale configuration file, JumpScale will walk over all Git repositories it finds under `$HOMEDIR/code/$type/$account/$reponame` and look for `.jsconfig`, and only in case it finds one it will set `path` value in the JumpScale configuration file to the repository where it found `.jsconfig`. In case no repository could be found, JumpScale will set the `path` value to the default `{j.dirs.CFGDIR}/myconfig`.
 
@@ -41,15 +154,7 @@ j.core.state.configSetInDict("myconfig", "sshkeyname", "")
 j.core.state.configSetInDict("myconfig", "giturl", "")
 ```
 
-In case you don't have any SSH key yet, create it - from the command line:
-```bash
-ssh-keygen -t rsa
-```
 
-Or using JumpScale:
-```python
-j.tools.prefab.local.system.ssh.keygen(user='root', name='id_rsa')
-```
 
 Create a new directory for your configuration repository and initialize it as a Git repository - from the command line:
 ```bash
@@ -171,9 +276,14 @@ Or just use `j.clients.itsyouonline.get()`:
 iyo_client = j.clients.itsyouonline.get(instance='main', data=iyo_config, create=True, die=True, interactive=False)
 ```
 
+Once you have the configuration instance for ItsYou.online, you can easily get a (refresheable) JWT:
+```python
+jwt = iyo_client.jwt_get(refreshable=True)
+```
+
 Do the same for OpenvCloud, prepare the configuration data for OpenvCloud:
 ```python
-url = "ch-gen-1.demo.greenitglobe.com"
+url = "ch-gen-1.gig.tech"
 location = "ch-gen-1"
 ovc_config = {
     "address": url,
@@ -190,6 +300,12 @@ ovc_client = j.clients.openvcloud.get(instance="swiss")
 Or using `j.clients.openvcloud.get()`:
 ```python
 ovc_client = j.clients.openvcloud.get(instance="swiss", data=ovc_config, create=True, die=True, interactive=False)
+```
+
+Update config instance data:
+```bash
+ovc_cfg = ovc_client.config
+data_set(key="address", val="ch-gen-1.gig.tech", save=True)
 ```
 
 <a id="create-vm"></a>
