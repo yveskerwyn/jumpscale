@@ -4,6 +4,39 @@ Make sure:
 - Your configuration manager is initialized
 - The SSH key used by the config manager is associated with your Git server account
 
+Then:
+- [Get a JWT](#get-jwt)
+- [Start the 0-robot](#start-robot)
+- [Create configuration instance for the 0-robot](#zrbot-config)
+- [Create the 0-robot services](#create-services)
+
+<a id="get-jwt"></a>
+## Get a JWT
+
+In order to get a JWT we need an application ID Ans secret from ItsYou.online.
+
+If not already done so before, create an ItsYou.online configuration instance, here from an application ID and secret available from environment variable:
+```python
+import os
+app_id = os.environ["APP_ID"]
+secret = os.environ["SECRET"]
+iyo_config = {
+    "application_id_": app_id,
+    "secret_": secret
+}
+
+iyo_client = j.clients.itsyouonline.get(instance='main', data=iyo_config, create=True, die=True, interactive=False)
+```
+
+This configuration instance only needs to be created once, getting it is simple:
+```python
+iyo_client = j.clients.itsyouonline.get(instance='main')
+```
+
+Using the configuration instance for ItsYou.online you can easily get a (refresheable) JWT:
+```python
+jwt = iyo_client.jwt_get(refreshable=True)
+```
 
 <a id="start-robot"></a>
 ## Have 0-robot running
@@ -48,8 +81,8 @@ zrobot server start -D $data_repo -C $config_repo -T $template_repo_openvcloud -
 ```
 
 
-<a id="config-instance"></a>
-## 0-robot configuration instances
+<a id="zrbot-config"></a>
+## Create configuration instance for the 0-robot
 
 Check for an existing 0-robot config instance:
 ```python
@@ -72,7 +105,7 @@ config:j.clients.zrobot:main
     url = 'http://192.168.103.251:6600'
 ```
 
-Optionally create a new config instance:
+If not done so before, create a new configuration instance for your 0-robot:
 ```python
 import os
 internal_ip_address = os.environ["internal_ip_address"]
@@ -89,12 +122,8 @@ zr_cfg = zrcl.config
 zr_cfg.data_set(key="url", val="http://localhost:6600", save=True)
 ```
 
-Get the JWT for interacting with OpenvCloud:
-- From your ItsYou.online configuration instance
-- From the ItsYou.online RESTful API
 
-
-<a id="zrobot-services"></a>
+<a id="create-services"></a>
 ## Create the 0-robot services
 
 List 0-robot services:
@@ -108,14 +137,14 @@ robot = j.clients.zrobot.robots['main']
 robot.services.names
 ```
 
-Get one of them:
+Get one of them, if any:
 ```python
-s = robot.services.get(name="be-gen-1")
+service = robot.services.get(name="ch-gen-1")
 ```
 
 List all actions available for this service:
 ```python
-s.actions
+service.actions
 ```
 
 Delete the service:
@@ -128,12 +157,14 @@ Variables for using the OpenvCloud templates:
 OVC_TEMPLATE_UID = "github.com/openvcloud/0-templates/openvcloud/0.0.1"
 ACCOUNT_TEMPLATE_UID = "github.com/openvcloud/0-templates/account/0.0.1"
 VDC_TEMPLATE_UID = "github.com/openvcloud/0-templates/vdc/0.0.1"
+SSHKEY_TEMPLATE_UID = "github.com/openvcloud/0-templates/sshkey/0.0.1"
+VM_TEMPLATE_UID = "github.com/openvcloud/0-templates/node/0.0.1"
 
-ovc_location = "ch-gen-1"
-ovc_address = "ch-gen-1.gig.tech"
-ovc_jwt = "eyJhbGciOiJFUzM4NCIsInR5cCI6IkpXVCJ9.eyJhenAiOiJlMnpsTi03U0M2N3RhdjN0UlJuZG9VQUd4a1U1IiwiZXhwIjoxNTIyNDE4ODUzLCJpc3MiOiJpdHN5b3VvbmxpbmUiLCJzY29wZSI6WyJ1c2VyOmFkbWluIl0sInVzZXJuYW1lIjoieXZlcyJ9.vPkJdNDF-y0I0P4j9rPDnh7KCN0t_cwVsdtmqC4Hrsd0XgactnUym6sOzKv5qpOIsxI9FqpscpkaM0e_6roU1UU3gYNuR6aySjthTzSXkbClGywoSZJf2ywya6xXBBdg"
+ovc_location = "be-gen-1"
+ovc_address = "be-gen-1.demo.greenitglobe.com"
+ovc_jwt = iyo_client.jwt_get(refreshable=True)
 
-ovc_service_name = "ch-gen-1"
+ovc_service_name = "be-gen-1"
 ovc_account_name = "Account_of_Yves"
 vdc_name = "test-vdc"
 ```
@@ -154,7 +185,7 @@ ovc_account_data = {}
 ovc_account_data["description"] = "test"
 ovc_account_data["openvcloud"] = ovc_service_name
 ovc_account_data["location"] = ovc_location
-account_service = robot.services.create(template_uid=ACCOUNT_TEMPLATE_UID , service_name=ovc_account_name, data=ovc_account_data)
+account_service = robot.services.create(template_uid=ACCOUNT_TEMPLATE_UID, service_name=ovc_account_name, data=ovc_account_data)
 ```
 
 Create a VDC service:
@@ -176,6 +207,33 @@ ovc_service.schedule_action(action="install")
 account_service.schedule_action(action="install")
 vdc_service.schedule_action(action="install")
 ```
+
+Before deploying a virtual machine (node), we first create service for a SSH key. This SSH key will be needed for creating the virtual machine:
+```python
+sshkey_name = "mykey"
+passphrase = "atleast5chars"
+#sshkey_path = "/root/.ssh/"
+sshkey_data = {}
+#sshkey_data["dir"] = sshkey_path 
+sshkey_data["passphrase"] = passphrase
+sshkey_service = robot.services.create(template_uid=SSHKEY_TEMPLATE_UID, service_name=sshkey_name, data=sshkey_data)
+```
+
+Create VM service:
+```python
+vm_name = "my-vm"
+vm_data = {}
+vm_data["sshKey"] = sshkey_name
+vm_data["vdc"] = vdc_name
+vm_service = robot.services.create(template_uid=VM_TEMPLATE_UID, service_name=vm_name, data=vm_data)
+```
+
+Install the VM:
+```python
+sshkey_service.schedule_action(action="install")
+vm_service.schedule_action(action="install")
+```
+
 
 <a id="blueprints"></a>
 ## Using blueprints
@@ -281,18 +339,6 @@ actions:
 
 
 
-
-
-??
-```python
-from zerorobot.dsl.ZeroRobotAPI import ZeroRobotAPI
-from zerorobot.cli import utils
-```
-
-```python
-instance, _ = utils.get_instance()
-client = j.clients.zrobot.get(instance)
-```
 
 
 
