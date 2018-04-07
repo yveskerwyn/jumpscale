@@ -9,13 +9,14 @@ Then:
 - [Start the 0-robot](#start-robot)
 - [Create configuration instance for the 0-robot](#zrbot-config)
 - [Create the 0-robot services](#create-services)
+- [Using blueprints](#blueprints)
 
 <a id="get-jwt"></a>
 ## Get a JWT
 
-In order to get a JWT we need an application ID Ans secret from ItsYou.online.
+In order to get a JWT we need an application ID and a secret from ItsYou.online.
 
-If not already done so before, create an ItsYou.online configuration instance, here from an application ID and secret available from environment variable:
+If not already done so before, create an ItsYou.online configuration instance, here from an application ID and secret available from exported environment variables:
 ```python
 import os
 app_id = os.environ["APP_ID"]
@@ -52,7 +53,7 @@ cd /opt/code/github/zero-os
 git clone https://github.com/zero-os/0-robot.git
 ```
 
-Install Zero-Robot and all dependencies:
+Install Zero-Robot and all its dependencies:
 ```bash
 cd /opt/code/github/zero-os/0-robot
 export ZROBOTBRANCH="master"
@@ -82,14 +83,14 @@ zrobot server start -D $data_repo -C $config_repo -T $template_repo_openvcloud -
 
 
 <a id="zrbot-config"></a>
-## Create configuration instance for the 0-robot
+## Create a configuration instance for the 0-robot
 
 Check for an existing 0-robot config instance:
 ```python
 j.clients.zrobot.list()
 ```
 
-If there is an existing one, get it and check the configuration, for the instance `main`:
+If there is an existing one, get it and check the configuration, here for the instance `main`:
 ```python
 zrcl = j.clients.zrobot.get(instance="main")
 zrcl.config
@@ -251,21 +252,5 @@ blueprint = {
 Execute the blueprint:
 ```python
 data = {'content': blueprint}
-
-try:
-    tasks, _ = zrcl.api.blueprints.ExecuteBlueprint(data)
-
-    result = dict()
-    for task in tasks:
-        if task.service_name in result.keys():
-            result[task.service_name].update({task.action_name: task.guid})
-        else:
-            result[task.service_name] = {task.action_name: task.guid}
-    return result
-
-except HTTPError as err:
-    msg = err.response.json()['message']
-    self.log('message: %s' % msg)
-    self.log('code: %s' % err.response.json()['code'])
-    return msg
+tasks, _ = zrcl.api.blueprints.ExecuteBlueprint(data)
 ```
