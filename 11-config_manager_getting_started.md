@@ -10,6 +10,7 @@ Steps:
 - [Create Git repository](#git-repo)
 - [Initialize the config manager](#init)
 - [Create a config instance for ItsYou.online](#iyo)
+- [Create a config instance for OpenvCloud](ovc)
 
 <a id="ssh-key"></a>
 
@@ -94,7 +95,6 @@ As a result two configuration files will have been created:
 - `$JS_CONFIG_REPO_DIR/j.tools.myconfig/main.toml`
 
 
-
 In order to check whether there is already a config repository:
 ```python
 j.tools.configmanager._findConfigRepo()
@@ -117,24 +117,47 @@ j.tools.myconfig
 
 ## Create a config instance for ItsYou.online
 
-
 Based on this ('main') configuration instance you then can get an ItsYou.online client as follows:
 ```python
 iyo_client = j.clients.itsyouonline.get(instance="main")
 ```
 
-By also passing the `application ID` and `secret` through the `data` argument you can override (and update) the ItsYou.online configuration instance that is used for connecting ItsYou.online:
+In order to create a configuration instance for an ItsYou.online user or organization, you need an API key for that user or organization:
+
+![](images/my_demo_key.png)
+
+The API key consists of two parts: an `application ID` and a `secret`. 
+
+In the interactive shell copy the values of the ``application ID` and `secret` into a dictionary: 
 ```python
-import os
-app_id = os.environ["APP_ID"]
-secret = os.environ["SECRET"]
+app_id = ""
+secret = ""
 iyo_config = {
     "application_id_": app_id,
     "secret_": secret
 }
-
-iyo_client = j.clients.itsyouonline.get(instance="main", data=iyo_config)
 ```
+
+In order to create the config instance for this ItsYou.online user execute:
+```python
+j.tools.configmanager.configure(location="j.clients.itsyouonline", instance="main", data=iyo_config, interactive=True)
+```
+
+This will bring up the config manager interactive screen:
+![](images/j.clients.itsyouonline.png)
+
+
+With this config instance you easily get JSON web token (JWT), for instance asserting that the user for which the API was created is member of a specified ItsYou.online organization:
+```python
+iyo_organization = "new-org-name"
+iyo_client = j.clients.itsyouonline.get(instance="main")
+memberof_scope = "user:memberof:{}".format(iyo_organization)
+jwt = iyo_client.jwt_get(scope=memberof_scope)
+```
+
+<a id="ovc"></a>
+Create a config instance for OpenvCloud
+
 
 Next you will need to set OpenvCloud configuration instance, this can be done interactively:
 ```python
