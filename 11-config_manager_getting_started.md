@@ -146,14 +146,39 @@ j.tools.configmanager.configure(location="j.clients.itsyouonline", instance="mai
 This will bring up the config manager interactive screen:
 ![](images/j.clients.itsyouonline.png)
 
+The same can be achieve from the command line using `js9_config configure` as follows:
+```bash
+js9_config configure -l j.clients.itsyouonline -i main
+```
 
-With this config instance you easily get JSON web token (JWT), for instance asserting that the user for which the API was created is member of a specified ItsYou.online organization:
+As a result you will now have a ItsYou.online config instance:
+```python
+j.tools.configmanager.list(location="j.clients.itsyouonline")
+```
+
+In order to get it:
+```python
+iyo_config_instance = j.tools.configmanager.get(location="j.clients.itsyouonline", instance="main")
+```
+
+This allows you to update any of the configuration data as follows:
+```python
+iyo_config_instance.data_set(key="application_id_", val="<new_vale_here>", save=True)
+```
+
+Through the ItsYou.online client you can use the configuration instance:
+```python
+iyo_client = j.clients.itsyouonline.get(instance="main")
+```
+
+A typical usage scenarion is getting a JSON web token (JWT), asserting that the user for which the API key was created is member of a specified ItsYou.online organization:
 ```python
 iyo_organization = "new-org-name"
 iyo_client = j.clients.itsyouonline.get(instance="main")
 memberof_scope = "user:memberof:{}".format(iyo_organization)
 jwt = iyo_client.jwt_get(scope=memberof_scope)
 ```
+
 
 <a id="ovc"></a>
 Create a config instance for OpenvCloud
@@ -166,7 +191,7 @@ j.tools.configmanager.configure(location="j.clients.openvcloud", instance="main"
 
 Or using the bash tool:
 ```bash
-js9_config configure -l j.clients.openvcloud -i main --silent --key /root/.ssh/id_rsa
+js9_config configure -l j.clients.openvcloud -i main
 ```
 
 Based on this configuration you can get an OpenvCloud client:
