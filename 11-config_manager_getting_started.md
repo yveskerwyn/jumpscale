@@ -9,7 +9,7 @@ Steps:
 - [Create the SSH key](#ssh-key)
 - [Create Git repository](#git-repo)
 - [Initialize the config manager](#init)
-
+- [Create a config instance for ItsYou.online](#iyo)
 
 <a id="ssh-key"></a>
 
@@ -113,9 +113,9 @@ Also to check:
 j.tools.myconfig
 ```
 
+<a id="iyo"></a>
 
-
-
+## Create a config instance for ItsYou.online
 
 
 Based on this ('main') configuration instance you then can get an ItsYou.online client as follows:
