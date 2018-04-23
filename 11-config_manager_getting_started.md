@@ -77,18 +77,18 @@ jsconfig["fullname"] = "Yves Kerwyn"
 j.tools.configmanager.init(data=jsconfig, silent=False, configpath=config_path, keypath=sshkey_path)
 ```
 
-This will pop up to interactive screens:
+This will pop up two interactive screens:
 - the first one to collect configuration data for `j.clients.sshkey`
 - the second one to collect configuration data for `j.tools.myconfig`
 
 The first one should not be filled out, since all data come from the `$JS_CONFIG_SSHKEY_PATH` you passed:
 
-![](j.clients.sshkey.png)
+![](images/j.clients.sshkey.png)
 
 
 In the second you can specify your e-mail address, full name and your (ItsYou.online or other) username:
 
-![](j.tools.myconfig.png)
+![](images/j.tools.myconfig.png)
 
 
 As a result two configuration files will have been created:
