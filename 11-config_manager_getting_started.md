@@ -3,7 +3,7 @@
 See: https://github.com/Jumpscale/core9/blob/development/docs/config/configmanager.md
 
 
-## Initialize the configuration manager
+## Initialize the config manager
 
 Steps:
 - [Create the SSH key](#ssh-key)
@@ -17,7 +17,7 @@ Steps:
 
 ### Create the SSH key
 
-The JumpScale configuration manager will encrypt all secret configuration data with an SSH private key of choice.
+The JumpScale config manager will encrypt all secret configuration data with an SSH private key of choice.
 
 In case you don't have any SSH key yet, create it from the command line, here with an empty passphrase:
 ```bash
@@ -117,11 +117,6 @@ j.tools.myconfig
 <a id="iyo"></a>
 
 ## Create a config instance for ItsYou.online
-
-Based on this ('main') configuration instance you then can get an ItsYou.online client as follows:
-```python
-iyo_client = j.clients.itsyouonline.get(instance="main")
-```
 
 In order to create a configuration instance for an ItsYou.online user or organization, you need an API key for that user or organization:
 
