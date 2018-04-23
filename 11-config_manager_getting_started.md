@@ -48,7 +48,7 @@ cd $JS_CONFIG_REPO_DIR
 git init
 ```
 
-<a id="git-repo"></a>
+<a id="init"></a>
 
 ### Initialize the config manager
 
