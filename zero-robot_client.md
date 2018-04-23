@@ -16,11 +16,13 @@ Then:
 
 In order to get a JWT we need an application ID and a secret from ItsYou.online.
 
-If not already done so before, create an ItsYou.online configuration instance, here from an application ID and secret available from exported environment variables:
+Let's that using the JumpScale interactive shell:
+```bash
+js9
+```
+
+If not already done so before, create an ItsYou.online configuration instance, by executing the following in the internactive shell::
 ```python
-import os
-app_id = os.environ["APP_ID"]
-secret = os.environ["SECRET"]
 iyo_config = {
     "application_id_": app_id,
     "secret_": secret

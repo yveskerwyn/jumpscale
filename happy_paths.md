@@ -2,7 +2,7 @@
 
 - [Install JumpScale](#install-js)
 - [Create a SSH key](#ssh-key)
-- [Initialize the Configuration Manager](#from-zero)
+- [Initialize the Configuration Manager](#init-config)
 - [Creating a virtual machine ready for hosting Docker containers](#create-vm)
 
 
@@ -29,10 +29,12 @@ ZInstall_host_js9_full
 
 The JumpScale configuration manager will encrypt all secret configuration data with an SSH private key of choice.
 
-In case you don't have any SSH key yet, create it - from the command line:
+In case you don't have any SSH key yet, create it - from the command line, with an empty passphrase:
 ```bash
-ssh-keygen -t rsa
+ssh-keygen -t rsa -f ~/.ssh/id_rsa -P ''
 ```
+
+
 
 Or using JumpScale:
 ```python
@@ -60,12 +62,15 @@ j.core.state.config_js["myconfig"]
 ```
 
 Options to initialize:
-- using `js9_config check`
-- using `js9_config init` w/o options
-- using `js9_config init` w options
+- From the command line:
+    - using `js9_config check`
+    - using `js9_config init` w/o options
+    - using `js9_config init` w/ options
+- From JumpScale
 
-using `js9_config check``
+Using `js9_config check`:
 - it will check for keys in ~/.ssh
+- if no keys were found in ~/.ssh...
 - if more then one is found it will ask which to use
 - if only one found it will load that one in ssh-agent
 - it will then ask to use loaded key as encryption key
@@ -74,7 +79,7 @@ using `js9_config check``
 - then you will be asked to fill out config data for `j.tools.myconfig`: `email`, `fullname` and `login_name`
 - then it will ask to use chosen key to encrypt
 - And finally you'll get:
-```
+
 configmanager:
 
 - path: /opt/code/docs/yves/jsconfig
@@ -84,13 +89,8 @@ configmanager:
 - key in sshagent: False
 ```
 
-to reset:
-```bash
-rm -rf /opt/code/docs/yves/jsconfig
-j.core.state.configSetInDict("myconfig", "path", "")
-j.core.state.configSetInDict("myconfig", "sshkeyname", "")
-j.core.state.configSetInDict("myconfig", "giturl", "")
-```
+See related issue: https://github.com/Jumpscale/bash/issues/76
+
 
 In order to initialize execute `js9_config init` from the command line:
 ```bash
@@ -157,10 +157,11 @@ j.core.state.configSetInDict("myconfig", "giturl", "")
 
 
 Create a new directory for your configuration repository and initialize it as a Git repository - from the command line:
-```bash
-#rm -rf /opt/code/docs/yves/myconfig
-mkdir -p /opt/code/docs/yves/myconfig
-cd /opt/code/docs/yves/myconfig
+```
+my_js_config_directory="/opt/code/docs/yves/myconfig"
+#rm -rf $my_js_config_directory
+mkdir -p  $my_js_config_directory
+cd  $my_js_config_directory
 git init
 ```
 
@@ -168,7 +169,7 @@ git init
 
 Then initialize the configuration repository - from the command line:
 ```bash
-js9_config init --key ~/.ssh/id_rsa --path /opt/code/docs/yves/myconfig
+js9_config init --key ~/.ssh/id_rsa --path  $my_js_config_directory
 ```
 
 ```bash
@@ -303,7 +304,7 @@ ovc_client = j.clients.openvcloud.get(instance="swiss", data=ovc_config, create=
 ```
 
 Update config instance data:
-```bash
+```python
 ovc_cfg = ovc_client.config
 data_set(key="address", val="ch-gen-1.gig.tech", save=True)
 ```
@@ -415,3 +416,13 @@ js9_node ssh -i proxy
 ```
 
 
+
+
+
+to reset:
+```bash
+rm -rf /opt/code/docs/yves/jsconfig
+j.core.state.configSetInDict("myconfig", "path", "")
+j.core.state.configSetInDict("myconfig", "sshkeyname", "")
+j.core.state.configSetInDict("myconfig", "giturl", "")
+```

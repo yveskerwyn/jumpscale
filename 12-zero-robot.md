@@ -3,20 +3,101 @@
 See: https://github.com/Jumpscale/0-robot/blob/master/docs/getting_started.md
 
 
-- [Using a Docker container](#docker)
-- [On your host](#host)
+First step is to create two private Git repositories:
+
+    Zero-Robot **data** repository, here in this example named `my_robotdata`
+    JumpScale **configuration** repository, here in this example named `my_jsconfig`
+
+Make sure to initialize them.
+
+![](images/my_robotdata.png)
+
+![](images/my_robotdata2.png)
+
+![](images/my_jsconfig.png)
+
+![](images/my_jsconfig2.png)
+
+Copy the ssh/https addresses of the Git repositories in environment variables:
+```bash
+data_repo="ssh://git@docs.greenitglobe.com:10022/yves/my_robotdata.git"
+config_repo="ssh://git@docs.greenitglobe.com:10022/yves/my_jsconfig.git"
+ovc_templates_repo="https://github.com/openvcloud/0-templates.git"
+```
+
+In above we also created an environment variable for the 0-templates repository for OpenvCloud.
+
+If not already done, create a SSH key, here with empty passphrase:
+```bash
+ssh-keygen -t rsa -f ~/.ssh/id_rsa -P ''
+```
+
+If not already done, start ssh-agent and load the SSH key:
+```bash
+eval `ssh-agent`
+ssh-add ~/.ssh/id_rsa
+```
+
+Make sure that this SSH key is associated with your user account on the Git server where you created the 0-robot data and JumpScale configuration repositories.
+
+Get the internal IP address of your host into an environment variable:
+```bash
+internal_ip_address="$(ip route get 8.8.8.8 | awk '{print $NF; exit}')"
+```
+
+Next you have two options:
+- [Start the Zero-Robot in a Docker container](#docker)
+- [Start the Zero-Robot on your host](#host)
 
 
 <a id="docker"></a>
 ## Using a Docker container
 
-Check script to create a Docker image for 0-robot:
-https://github.com/Jumpscale/0-robot/blob/master/utils/scripts/packages/dockerbuild.py
+First make sure you have Docker installed on your host.
 
-Create a container:
-```bash
-docker run --name 0-robot -d -p 192.168.103.254:6600:6600 -v /root/.ssh:/root/.ssh -e data-repo=ssh://git@docs.greenitglobe.com:10022/yves/zrobot3.git -e config-repo=ssh://git@docs.greenitglobe.com:10022/yves/myjsconfig.git -e template-repo=https://github.com/zero-os/0-templates jumpscale/0-robot:latest
+On a machine with JumpScale installed, installing Docker is easy, from the interactive shell execute:
+```python
+j.tools.prefab.local.virtualization.docker.install()
 ```
+
+The Docker image for Zero-Robot is available on [Docker Hub](https://hub.docker.com/r/jumpscale/0-robot/).
+
+In order to create (and upload) your own Docker image, you can use the `docker_install.py` script, available [here](https://docs.grid.tf/despiegk/itenv_test/src/branch/master/docker_install.py).
+
+Start the script as follows:
+```bash
+repo_branch="master"
+zrobot_docker_img_builder_dir="/tmp/zero_robot_image"
+
+mkdir -p $zrobot_docker_img_builder_dir
+wget -O $zrobot_docker_img_builder_dir/docker_install.py https://docs.grid.tf/despiegk/itenv_test/raw/branch/$repo_branch/docker_install.py 
+cd $zrobot_docker_img_builder_dir
+python3 docker_install.py
+```
+
+This will bring you in an embedded interactive shell, where you execute:
+```python
+container_name = "0-robot"
+js_branch = "development"
+zr_branch = "development"
+build_container_zrobot(name=container_name, jsbranch=js_branch, zrbranch=zr_branch, push=True)
+```
+
+
+
+Then create the Docker container:
+```bash
+# for Mac: port_forwarding="8000:6600"
+port_forwarding="$internal_ip_address:8000:6600"
+docker run --name zrobot -e data_repo=$data_repo -e config_repo=$config_repo -e template_repo=$ovc_templates_repo -p $port_forwarding -v ~/.ssh -e auto_push=1 -e auto_push_interval=30 jumpscale/0-robot
+```
+
+In the above approach we mount `/root/.ssh`, making your SSH keys available in the Docker container. When the container starts it will check for id_rsa.pub. If it finds id_rsa.pub 0-robot will use this key to push to your data and configuration repositories, so make sure that this key is associated with your user account on the Git server.
+
+
+Regarding the port forwarding for Mac users, see:
+https://docs.docker.com/docker-for-mac/networking/
+
 
 In the Docker container [`dockerentrypoint.py`](https://github.com/Jumpscale/0-robot/blob/master/utils/scripts/packages/dockerentrypoint.py) is used as an ENTRYPOINT that will start 0-robot (`zrobot server start`) using the environment variables you passed when starting the container, following environment variables can be passed:
 ```bash
@@ -54,6 +135,15 @@ j.clients.zrobot.get
 <a id="host"></a>
 ## On your host
 
+Using the [0-robot installation instructions](https://github.com/zero-os/0-robot/blob/development/docs/getting_started.md#install-0-robot):
+```bash
+apt-get install -y libsqlite3-dev
+mkdir -p /opt/code/github/zero-os
+cd /opt/code/github/zero-os
+git clone https://github.com/zero-os/0-robot.git
+cd 0-robot
+pip install -e .
+```
 
 Make sure you have a repository for your JumpScale configuration, in an empty repository do:
 ```bash

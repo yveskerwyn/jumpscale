@@ -3,253 +3,101 @@
 See: https://github.com/Jumpscale/core9/blob/development/docs/config/configmanager.md
 
 
+## Initialize the configuration manager
+
+Steps:
+- [Create the SSH key](#ssh-key)
+- [Create Git repository](#git-repo)
+- [Initialize the config manager](#init)
 
 
-## Start from an existing config repository
+<a id="ssh-key"></a>
 
-In order to check whether there is already a config repository:
-```python
-j.tools.configmanager._findConfigRepo()
-```
+### Create the SSH key
 
+The JumpScale configuration manager will encrypt all secret configuration data with an SSH private key of choice.
 
-
-Working with the JumpScale config manager requires a private SSH key, which will be used by JumpScale to decrypt secret configuration data.
-
-The following will list your ssh **connections** that are configured on your in the JumpScale config manager on the local machine:
-```python
-j.clients.ssh.list()
-```
-
-Or:
-```python
-j.clients.ssh.getall()
-```
-
-Data returned per sshkey
-```python
-addr = '185.15.201.106'
-
-addr_priv = '192.168.103.252'
-
-allow_agent = true
-
-clienttype = ''
-
-forward_agent = true
-
-login = 'root'
-
-passwd_ = ''
-
-port = 2202
-
-port_priv = 22
-
-proxy = ''
-
-sshkey = 'mykey'
-
-stdout = true
-```
-
-In order to delete entries:
+In case you don't have any SSH key yet, create it from the command line, here with an empty passphrase:
 ```bash
-j.clients.ssh.delete(instance='185-15-201-106-2000-root-public')
+export JS_CONFIG_SSHKEY_NAME="~/.ssh/id_rsa"
+ssh-keygen -t rsa -f ~/.ssh/$JS_CONFIG_SSHKEY_NAME -P ''
 ```
 
-> note: `j.clients.ssh.list()` lists all SSH keys that are in the config manager
-> while ` `j.clients.sshkey.list()` lists all SSH keys that are loaded by the ssh-agent
-
-
-Also see:
-```bash
-ls j.clients.sshkey -1
-id_rsa.toml
-mykey.toml
-mykey2.toml
-```
-
-And:
-```bash
-ls j.clients.ssh -1
-185-15-201-106-2200-root-public.toml
-185-15-201-106-2201-root-public.toml
-185-15-201-106-2202-root-public.toml
-185-15-201-106-2203-root-public.toml
-```
-
-Checking the `sshkey`configuration data:
-```bash
-cat j.clients.sshkey/id_rsa.toml
-```
-
-Output:
-```bash
-allow_agent = true
-
-duration = 86400
-
-passphrase_ = ''
-
-path = ''
-
-privkey_ = ''
-
-pubkey = ''
-```
-
-Checking the `ssh` configuration data:
-```bash
-cat j.clients.ssh/185-15-201-106-2200-root-public.toml
-```
-
-Output:
-```bash
-addr = '185.15.201.106'
-
-addr_priv = '192.168.103.254'
-
-allow_agent = true
-
-clienttype = ''
-
-forward_agent = true
-
-login = 'root'
-
-passwd_ = ''
-
-port = 2200
-
-port_priv = 22
-
-proxy = ''
-
-sshkey = 'mykey'
-
-stdout = true
-
-timeout = 300
-```
-
-
-In case you didn't yet initialize a config repository it will try to do so. For this JumpScale needs to know which SSH key you want to use the encrypt the secret data in the config repository. Which is a bit a chicken and egg situation. At this point it check the ssh-agent, and invited you to select the key you want JumpScale to use for your new config repository.
-
-In the case that no key was loaded, it will check for keys in `/root/.ssh/`. and invite you to select one of the found keys, or in case there was only one found it will propose to use that one.
-
-
-Or in the case that there is no ssh-agent running yet, it will first start an ssh agent and then check for keys in `/root/.ssh/`. If only one found it will propose to use that one:
+Or using JumpScale:
 ```python
-In [1]: j.clients.ssh.list()
-* Will start agent
-* load ssh agent
-* load ssh key: /root/.ssh/id_rsa
-Identity added: /root/.ssh/id_rsa (/root/.ssh/id_rsa)
-Lifetime set to 86400 seconds
-* JS9 init: ssh key found in agent is:'/root/.ssh/id_rsa'
-* JS9 init: Is it ok to use this one:'/root/.ssh/id_rsa'?
- [y/n]:
- ```
-
- > In the special case that you have a forwarded keys loaded by ssh agent, it will also include that key as a possible key for you to choose for the new config repository. Choosing this key is currently however untested/unsupported:
-```python
-* JS9 init: ssh key found in agent is:'/Users/yves/.ssh/id_rsa'
-* JS9 init: Is it ok to use this one:'/Users/yves/.ssh/id_rsa'?
+import os
+ssh_key_name = os.environ["JS_CONFIG_SSHKEY_NAME"]
+j.tools.prefab.local.system.ssh.keygen(user='root', keytype='rsa', name=ssh_key_name)
 ```
 
 
-Also see: https://github.com/Jumpscale/0-robot/blob/master/utils/scripts/packages/dockerentrypoint.py
-```python
-if not j.sal.fs.exists("/root/.ssh/id_rsa"):
-    j.tools.prefab.local.system.ssh.keygen(user='root', name='id_rsa')
+<a id="git-repo"></a>
 
-j.tools.prefab.local.core.run("js9_config init --silent --path /tmp/myconfig --key /root/.ssh/id_rsa")
-```
+### Create Git repository
 
-See the options:
+Create a new Git repository under `j.dirs.CODEDIR`, which typically is `/opt/code`.
+
+We recommend to create the repository in the following path: `$GIT_SERVER/$GIT_ACCOUNT/$REPO_NAME`:
 ```bash
-root@vm-913:/opt/cfg# js9_config init --help
-Usage: js9_config init [OPTIONS]
-
-  js9_config init -s
-
-Options:
-  -s, --silent     if silent will try to figure out configuration
-                   automatically, make sure 1 sshkey loaded in ssh-agent.
-  -p, --path TEXT  path of the configuration repository you want to use
-  -k, --key TEXT   path to the ssh key you want to use
-  --help           Show this message and exit.
-  ```
-
-Get the path the exiting config repository:
-```python
-j.tools.configmanager.path_configrepo
+GIT_SERVER="docs.grid.tf"
+GIT_ACCOUNT="yves"
+REPO_NAME="my_jsconfig"
+JS_CONFIG_REPO_DIR="/opt/code/$GIT_SERVER/$GIT_ACCOUNT/$REPO_NAME"
+mkdir -p $JS_CONFIG_REPO_DIR
+cd $JS_CONFIG_REPO_DIR
+git init
 ```
 
+<a id="git-repo"></a>
 
+### Initialize the config manager
 
-```python
-j.tools.myconfig
-```
-
-
-
-## Create a new config repository
-
-If not already done, we need to create a configuration instance for ItsYou.online. This requires a Git repository that was initialized as the JumpScale configuration repository:
+In order to mark the above created Git repository as your configuration repository execute:
 ```bash
-js9_config init
-```
+js9_config init --path $JS_CONFIG_REPO_DIR --key $JS_CONFIG_SSHKEY_PATH
+``` 
 
 Or from the interactive shell:
 ```python
-j.tools.configmanager.init()
-```
+sshkey_name = "id_rsa"
+sshkey_path = "/root/.ssh/{}".format(sshkey_name)
 
-In the above case, you're not passing any arguments, as a result you'll get answer some questions:
-```python
-In [1]: j.tools.configmanager.init()
-* JS9 init: ssh key found in agent is:'/Users/yves/.ssh/id_rsa'
-* JS9 init: Is it ok to use this one:'/Users/yves/.ssh/id_rsa'?
- [y/n]: y
-* JS9 init: Do you want to use a git based CONFIG dir, y/n?
- [y/n]: n
-* JS9 init: will create config dir in '/opt/cfg/myconfig/', your config will not be centralised! Is this ok?
- [y/n]: y
-```
+git_server="docs.grid.tf"
+git_account="yves"
+repo_name="my_jsconfig"
+config_path = "{}/{}/{}/{}".fornmat(j.dirs.CODEDIR, git_server, git_account, repo_name)
 
-```python
 jsconfig = {}
 jsconfig["email"] = "yves@gig.tech"
 jsconfig["login_name"] = "yves"
 jsconfig["fullname"] = "Yves Kerwyn"
 
-ssh_key_path = "/root/.ssh/id_rsa"
-config_path = "/tmp/yveskerwyn"
-
-
-j.tools.configmanager.init(data=jsconfig, silent=False, configpath=config_path, keypath=ssh_key_path)
+j.tools.configmanager.init(data=jsconfig, silent=False, configpath=config_path, keypath=sshkey_path)
 ```
 
-Check:
+This will pop up to interactive screens:
+- the first one to collect configuration data for `j.clients.sshkey`
+- the second one to collect configuration data for `j.tools.myconfig`
+
+The first one should not be filled out, since all data come from the `$JS_CONFIG_SSHKEY_PATH` you passed:
+
+![](j.clients.sshkey.png)
+
+
+In the second you can specify your e-mail address, full name and your (ItsYou.online or other) username:
+
+![](j.tools.myconfig.png)
+
+
+As a result two configuration files will have been created:
+- `$JS_CONFIG_REPO_DIR/j.clients.sshkey/id_rsa.toml`
+- `$JS_CONFIG_REPO_DIR/j.tools.myconfig/main.toml`
+
+
+
+In order to check whether there is already a config repository:
 ```python
-j.tools.configmanager.path
-```
-
-```bash
-/tmp/yveskerwyn/j.clients.sshkey/id_rsa.toml
-allow_agent = true
-
-duration = 86400
-
-passphrase_ = ''
-
-path = ''
-
-privkey_ = ''
-
-pubkey = ''
+j.tools.configmanager._findConfigRepo()
 ```
 
 Also see the `~/js9host/cfg/jumpscale9.toml`: 
@@ -266,37 +114,9 @@ j.tools.myconfig
 ```
 
 
-Adding a JumpScale configuration instance for ItsYou.online is done as follows:
-```bash
-js9_config configure -l j.clients.itsyouonline -i main -s /root/.ssh/id_rsa
-```
 
-This will bring up a configuration form where you can fill out the ItsYou.online `baseurl`, your `application ID` and `secret`.
 
-In JumpScale you can list all ItsYou.online configuration instances as follows:
-```python
-j.tools.configmanager.list(location="j.clients.itsyouonline")
-```
 
-> Note that currently only one ('main') configuration instance can exists for ItsYou.online
-
-To interactively update a configuration instance:
-```python
-j.tools.configmanager.configure(location="j.clients.itsyouonline", instance="main")
-```
-
-Or w/o interaction:
-```python
-import os
-app_id = os.environ["APP_ID"]
-secret = os.environ["SECRET"]
-iyo_config = {
-    "application_id_": app_id,
-    "secret_": secret
-}
-#j.tools.configmanager.configure(location="j.clients.itsyouonline", data=iyo_config, instance="main", sshkey_path="/root/.ssh/bootstrap_vm2_key")
-j.tools.configmanager.configure(location="j.clients.itsyouonline", data=iyo_config, instance="main")
-```
 
 Based on this ('main') configuration instance you then can get an ItsYou.online client as follows:
 ```python
