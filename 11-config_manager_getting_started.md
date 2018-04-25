@@ -67,7 +67,7 @@ sshkey_path = "/root/.ssh/{}".format(sshkey_name)
 git_server="docs.grid.tf"
 git_account="yves"
 repo_name="my_jsconfig"
-config_path = "{}/{}/{}/{}".fornmat(j.dirs.CODEDIR, git_server, git_account, repo_name)
+config_path = "{}/{}/{}/{}".format(j.dirs.CODEDIR, git_server, git_account, repo_name)
 
 jsconfig = {}
 jsconfig["email"] = "yves@gig.tech"
@@ -128,7 +128,7 @@ In the interactive shell copy the values of the ``application ID` and `secret` i
 ```python
 app_id = ""
 secret = ""
-iyo_config = {
+iyo_cfg = {
     "application_id_": app_id,
     "secret_": secret
 }
@@ -136,7 +136,9 @@ iyo_config = {
 
 In order to create the config instance for this ItsYou.online user execute:
 ```python
-j.tools.configmanager.configure(location="j.clients.itsyouonline", instance="main", data=iyo_config, interactive=True)
+cfg_manager = j.tools.configmanager
+iyo_location  = "j.clients.itsyouonline"
+cfg_manager..configure(location=iyo_location, instance="main", data=iyo_cfg, interactive=True)
 ```
 
 This will bring up the config manager interactive screen:
@@ -179,5 +181,6 @@ jwt = iyo_client.jwt_get(scope=memberof_scope)
 ## Next steps
 
 Next you will want to check:
+- [Zero-OS client](14-zero-os_client.md)
 - [Getting started with Zero-Robot](zero-robot.md)
 - [Interacting with OpenvCloud](openvcloud.md)

@@ -114,3 +114,13 @@ ssh_test_key1_path = os.path.expanduser("~/.ssh/{}".format(ssh_test_key1_name))
 #j.clients.sshkey.key_generate('{home}/.ssh/test')
 j.clients.sshkey.key_generate(path=ssh_test_key1_path, passphrase='hello', overwrite=False, load=False, returnObj=True)
 ```
+
+Check the result:
+```python
+j.clients.sshkey.list()
+```
+
+Or for an already existing SSH key:
+```python
+my_sshkey =  j.clients.sshkey.get(instance='example_key', data=dict(path='/root/.ssh/id_rsa'))
+```
