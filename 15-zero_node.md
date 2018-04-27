@@ -1,7 +1,15 @@
 # Zero-Node
 
-See first the steps as documented in [Using the JumpScale client for Zero-OS](14-zero-os_client.md)
+- [Boot your Zero-OS Node](#boot-node)
+- [Connect from Insomnia](#insomnia)
+- [Get your JumpScale environment](#js-env)
+- [Get a connection to your Zero-OS node](#connect-zos)
+- [Using the Zero-Robot command line tool](#zrobot-tool)
+- [Using the JumpScale client for Zero-Robot](#jumpscale-client)
 
+<a id="boot-node"></a>
+
+## Boot your Zero-OS Node
 
 Customer iPXE
 https://bootstrap.gig.tech/ipxe/development/17d709436c5bc232/organization=zos-training-org%20development
@@ -9,6 +17,26 @@ https://bootstrap.gig.tech/ipxe/development/17d709436c5bc232/organization=zos-tr
 Or using the unsecure bootstrap - since sometimes Packer refuses our SSL:
 http://unsecure.bootstrap.gig.tech/ipxe/development/17d709436c5bc232/organization=zos-training-org%20development
 
+
+<a id="insomnia"></a>
+
+## Connect from Insomnia
+
+
+Insomnia:
+{
+	"organization": "zos-training-org",
+	"url": "http://10.147.18.206:6600"
+}
+
+![](images/jwt_query_params.png)
+
+
+<a id="js-env"></a>
+
+## Get your JumpScale environment
+
+See the steps as documented in [Using the JumpScale client for Zero-OS](14-zero-os_client.md)
 
 JumpScale bootstrap VM:
 - https://be-gen-1.demo.greenitglobe.com/CBGrid/Virtual%20Machine?id=2841
@@ -18,7 +46,9 @@ JumpScale bootstrap VM:
 See session of Zaibon:
 https://www.youtube.com/edit?o=U&video_id=iOkYf3S7ol0
 
-## Have a connection to your Zero-OS
+<a id="connect-zos"></a>
+
+## Get a connection to your Zero-OS node
 
 If you have an existing one:
 ```python
@@ -60,6 +90,7 @@ zos_client = j.clients.zero_os.get(instance=zos_instance_name)
 zos_node = j.clients.zero_os.sal.get_node(instance=zos_instance_name)
 ```
 
+<a id="zrobot-cli"></a>
 ## Using the Zero-Robot command line tool
 
 Currently, in order to use the Zero-Robot command line option you need to have to full Zero-Robot repository on your machine:
@@ -185,7 +216,9 @@ zrobot service list
 zrobot task get <service-id> <task-id>
 ```
 
-### Using the Zero-Robot client
+<a id="js-client"></a>
+
+## Using the JumpScale client for Zero-Robot 
 
 As a result of using the Zero-Robot command line tool (`zrobot`) a Zero-Robot configuration was created with the name as specified in the environment variable `$ZROBOT_NAME`, as you can check from JumpScale:
 ```python
@@ -221,13 +254,7 @@ robot_training_node = j.clients.zero_os.get(instance="robot-training-node")
 Use the ZeroTier address!! No port forward needed in OVC.
 Have your machine (Mac) joined in the ZT
 
-Insomnia:
-{
-	"organization": "zos-training-org",
-	"url": "http://10.147.18.206:6600"
-}
 
-![](images/jwt_query_params.png)
 
 
 Use the Zero-Robot client:
@@ -239,23 +266,14 @@ blueprint = order
 
 https://github.com/zero-os/0-robot/tree/master/docs/services
 
-
-
-
 https://zero-os.github.io/0-robot/api/zerorobot/dsl/ZeroRobotAPI.m.html
-
-
-
-
-
 
 
 no pushing, fully stateless
 
 
-
-
 Chris used a vnc client -> install one
+How to connect, which address?
 
 Wallet
 
@@ -263,7 +281,7 @@ Wallet
 cat blockchain.yaml
 ```
 
-
+From shell:
 ```python
 r = j.clients.zrobot.robots['robot1']
 r.templates.uids
