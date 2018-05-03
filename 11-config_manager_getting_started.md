@@ -21,7 +21,7 @@ The JumpScale config manager will encrypt all secret configuration data with an 
 
 In case you don't have any SSH key yet, create it from the command line, here with an empty passphrase:
 ```bash
-export JS_CONFIG_SSHKEY_NAME="~/.ssh/id_rsa"
+export JS_CONFIG_SSHKEY_NAME="~/.ssh/jsconfig_key"
 ssh-keygen -t rsa -f ~/.ssh/$JS_CONFIG_SSHKEY_NAME -P ''
 ```
 
@@ -47,7 +47,7 @@ REPO_NAME="my_jsconfig"
 JS_CONFIG_REPO_DIR="/opt/code/$GIT_SERVER/$GIT_ACCOUNT/$REPO_NAME"
 mkdir -p $JS_CONFIG_REPO_DIR
 cd $JS_CONFIG_REPO_DIR
-git init
+git init #optional
 ```
 
 <a id="init"></a>
@@ -61,12 +61,13 @@ js9_config init --path $JS_CONFIG_REPO_DIR --key $JS_CONFIG_SSHKEY_PATH
 
 Or from the interactive shell:
 ```python
-sshkey_name = "id_rsa"
+sshkey_name = "jsconfig_key"
 sshkey_path = "/root/.ssh/{}".format(sshkey_name)
+sshkey_client = j.clients.sshkey.key_generate(path=sshkey_path, passphrase='hello')
 
-git_server="docs.grid.tf"
-git_account="yves"
-repo_name="my_jsconfig"
+git_server = "docs.grid.tf"
+git_account = "yves"
+repo_name = "my_jsconfig"
 config_path = "{}/{}/{}/{}".format(j.dirs.CODEDIR, git_server, git_account, repo_name)
 
 jsconfig = {}
@@ -91,7 +92,7 @@ In the second you can specify your e-mail address, full name and your (ItsYou.on
 ![](images/j.tools.myconfig.png)
 
 
-As a result two configuration files will have been created:
+As a result two configuration files will get created:
 - `$JS_CONFIG_REPO_DIR/j.clients.sshkey/id_rsa.toml`
 - `$JS_CONFIG_REPO_DIR/j.tools.myconfig/main.toml`
 
@@ -171,7 +172,7 @@ iyo_client = j.clients.itsyouonline.get(instance="main")
 
 A typical usage scenario is getting a JSON web token (JWT), asserting that the user for which the API key was created is member of a specified ItsYou.online organization:
 ```python
-iyo_organization = "new-org-name"
+iyo_organization = "training-org-name"
 iyo_client = j.clients.itsyouonline.get(instance="main")
 memberof_scope = "user:memberof:{}".format(iyo_organization)
 jwt = iyo_client.jwt_get(scope=memberof_scope)
@@ -182,5 +183,5 @@ jwt = iyo_client.jwt_get(scope=memberof_scope)
 
 Next you will want to check:
 - [Zero-OS client](14-zero-os_client.md)
-- [Getting started with Zero-Robot](zero-robot.md)
-- [Interacting with OpenvCloud](openvcloud.md)
+- [Getting started with Zero-Robot](12-zero-robot.md)
+- [Interacting with OpenvCloud](13-openvcloud.md)
