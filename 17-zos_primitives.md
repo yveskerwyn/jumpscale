@@ -422,13 +422,13 @@ zdb.namespaces.remove(item=namespace)       # Delete a namespace using object re
 
 Create (define) a disk:
 ```python
-disk_name = 'mydisk'
-disk = zos_node.primitives.create_disk(name=disk_name, zdb=zdb, mountpoint='/mountpointinsidevm', filesystem='btrfs') 
+zdisk_name = 'mydisk'
+zdisk = zos_node.primitives.create_disk(name=disk_name, zdb=zdb, mountpoint='/mountpointinsidevm', filesystem='btrfs') 
 ```
 
 Deploy the disk, will create namespace on zdb
 ```python
-disk.deploy()
+zdisk.deploy()
 ```
 
 You need to restart the VM at this point, or later?
@@ -439,7 +439,7 @@ zos_vm.restart()
 Attach the disk:
 ```python
 zdisk.deploy()
-vm.disks.add(name_or_disk=disk_name , url=zdisk)
+vm.disks.add(name_or_disk=zdisk)
 vm.deploy()
 ```
 
