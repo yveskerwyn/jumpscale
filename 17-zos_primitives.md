@@ -43,6 +43,45 @@ Used during tests:
 ipxe: https://bootstrap.gig.tech/ipxe/development-update-e2fs/0/organization=zos-training-org%20development
 ```
 
+
+## Join the ZeroTier network
+
+Only need if you work with a ZeroTier.
+
+```python
+zt_network_id = '0' # no ZeroTier
+zt_network_id = '17d709436c5bc232'
+local_prefab = j.tools.prefab.local
+```
+
+Install ZT if needed:
+```python
+local_prefab.network.zerotier.install()
+local_prefab.network.zerotier.start()
+```
+
+Join:
+```python
+local_prefab.network.zerotier.network_join(network_id=zt_network_id)
+```
+
+Authorize the join request:
+```python
+zt_instance_name = 'myzt'
+zt_token = '**'
+zt_cfg = dict([('token_', zt_token)])
+zt_client = j.clients.zerotier.get(instance=zt_instance_name, data=zt_cfg)
+#zt_client = j.clients.zerotier.get(instance=zt_instance_name)
+
+zt_machine_addr = local_prefab.network.zerotier.get_zerotier_machine_address()
+
+zt_network = zt_client.network_get(network_id=zt_network_id)
+
+zos_member = zt_network.member_get(address=zt_machine_addr)
+
+zos_member.authorize()
+```
+
 ## Boot the Zero-OS node on OpenvCloud:
 
 Get a cloud space on an OpenvCloud environment:
@@ -58,18 +97,17 @@ ovc_client = j.clients.openvcloud.get(instance=ovc_instance_name, data=ovc_cfg)
 #ovc_client = j.clients.openvcloud.get(instance=ovc_instance_name)
 
 ovc_account_name = 'Account_of_Yves'
-vdc_name = 'zero-space'
+vdc_name = 'zero-space2'
 
 ovc_account = ovc_client.account_get(name=ovc_account_name, create=False)
 cloud_space = ovc_account.space_get(name=vdc_name, create=True)
 #cloud_space = ovc_account.space_get(name=vdc_name, create=False)
 ```
 
-Get the cloud space public IP address:
+Get the public IP address of the cloud space:
 ```python
 cloudspace_public_ip_address = cloud_space.ipaddr_pub
 ```
-
 
 Boot a VM with Zero-OS in the cloud space:
 ```python
@@ -78,20 +116,25 @@ iyo_organization = 'zos-training-org'
 zos_kernel_params = ['organization={}'.format(iyo_organization), 'development']
 #zos_branch = 'development'
 zos_branch = 'development-update-e2fs'
-zt_network_id = '0' # no ZeroTier
 
 ipxe_url = 'ipxe: https://bootstrap.gig.tech/ipxe/{}/{}/'.format(zos_branch, zt_network_id) + '%20'.join(zos_kernel_params)
 
 zos_vm = cloud_space.machine_create(name=vm_name, memsize=8, disksize=50, image='IPXE Boot', authorize_ssh=False, userdata=ipxe_url)
 ```
 
-In case you don't use a ZeroTier, you need a port forward for the Redis (6379) and for the Open vSwitch container (9900)
+If you specified a ZeroTier network, setup the ZeroTier client and authorize the join request from the Zero-OS node:
+```python
+zos_member = zt_network.member_get(public_ip=cloudspace_public_ip_address)
+zos_member.authorize()
+```
+
+In case you don't use a ZeroTier (`zt_network_id = 0`), you need a port forward for the Redis (6379) and for the Open vSwitch container (9900)
 ```python
 zos_vm.portforward_create(publicport=6379, localport=6379)
 zos_vm.portforward_create(publicport=9900, localport=9900)
 ```
 
-You also need to attach the external network directly to the VM, making it available for the Gateway container:
+In that case you also need to attach the external network directly to the VM, making it available for the Gateway container:
 ```python 
 zos_vm.externalnetwork_attach()
 ```
@@ -105,11 +148,6 @@ external_network_mac_address = zos_vm.model['interfaces'][1]['macAddress']
 Also get the IP address of the internet gateway:
 ```python
 external_gw_ip_address = zos_vm.model['interfaces'][1]['params'].split()[0].rsplit(':')[1]
-```
-
-Since you started this machine in development mode, you can SSH it, but first authorize your SSH key:
-```python
-zos_node.client.bash('wget ssh.maxux.net/yveskerwyn -O - | ash').get()
 ```
 
 ## Set up connection
@@ -129,7 +167,10 @@ jwt = iyo_client.jwt_get(scope=memberof_scope, refreshable=True)
 
 # New connection - then connect
 #node_address = '10.147.18.166'
-node_address = cloudspace_public_ip_address
+if zt_network_id == 0:
+    node_address = cloudspace_public_ip_address
+else:
+    node_address = zos_member.private_ip
 
 zos_cfg = {"host": node_address, "port": 6379, "password_": jwt}
 zos_client = j.clients.zos.get(instance=zos_instance_name, data=zos_cfg)
@@ -144,6 +185,11 @@ To check the flist version that was used:
 zos_node.client.info.version()
 ```
 
+Since you started this machine in development mode, you can SSH it, but first authorize your SSH key:
+```python
+zos_node.client.bash('wget ssh.maxux.net/yveskerwyn -O - | ash').get()
+```
+
 Configure the backplane bridge - not relevant in case you have only one node??? but needed in order to deploy the beloz GW: 
 ```python
 ovs_container_name = 'ovs'
@@ -156,14 +202,6 @@ zos_node.containers.list()
 ovs_container = zos_node.containers.get(name=ovs_container_name)
 ```
 
-If used, setup the ZeroTier client:
-```python
-zt_instance_name = 'myzt'
-zt_token = '**'
-zt_cfg = dict([('token_', zt_token)])
-zt_cl = j.clients.zerotier.get(instance=zt_instance_name, data=zt_cfg)
-#zt_cl = j.clients.zerotier.get(instance=zt_instance_name)
-```
 
 ## Gateway
 
