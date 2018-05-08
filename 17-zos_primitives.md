@@ -1,5 +1,7 @@
 # Zero-OS Primitives
 
+## Test data
+
 Specifications:
 https://github.com/Jumpscale/lib9/blob/zosprimitives/specs/zero-os-primitives.md
 
@@ -21,317 +23,336 @@ Packet.net:
 - name: zos-training-node:
 - URL: https://app.packet.net/devices/3fe15ec2-eec5-4784-b2ed-e5a0cd3755f5
 
-
-Pseudo code:
-```python
-node = j.clients.zeroos.sal.node_get('myzos')
-
-# Create a new gateway
-# Name will be used for creating the effective zero-os container
-gw = node.primitives.create_gateway(name="my-little-gw")
-
-# Add a network with name 'public' using a vlan [vlan/vxlan/zerotier]
-pubnet = gw.networks.add(name="public", type_="vlan")
-pubnet.type = 'vlan'                  # NEEDS UPDATE
-pubnet.vlantag = 100                    # vlan to be used for the pubnet 
-pubnet.ip.cidr = '185.69.166.2/24'      # ip/subnet to be used for the nic configuration 
-                                        # of the gateway itself for pubnet
-pubnet.ip.gateway = '185.69.166.254'    # gateway to be used for the nic configuration 
-                                        # of the gateway itself for pubnet
-
-# Add a network with name 'private' using a zerotier [vlan/vxlan/zerotier]
-privnet = gw.networks.add(name="private", type_="zerotier")
-privnet.networkid = 'jkhg53df3g'                  # If empty, zerotier network will be created 
-                                                  # automatically using token
-privnet.client = j.clients.zerotier.get("geert")  # Needed to create network and / or authorize 
-                                                  # gateway & vms into network
-privnet.ip.cidr = '192.168.0.1/24'                # ip/subnet to be used for the nic confguration
-                                                  # of the gateway itself for privnet
-privnet.hosts.nameservers = ['8.8.8.8']           # nameservers that will be used by the hosts in privnet
-                                                  # if not set, defaults to ['8.8.8.8']
-
-# Deploy the gateway to the zero-os node
-gw.deploy()
-
-# Serialize the gateway configuration to json
-gw_json_string = gw.to_json()    # only contains gateway information, no vm details apart from host info
-                                 # (see further down)
-
-# Instantiate gateway sal from json
-gw = node.primitives.from_json(type_="gateway", json=gw_json_string)
-
-# Reference network with name public
-pubnet = gw.networks['public']
-
-# Loop through gateway networks
-for net in gw.networks:
-    print("Network %s uses subnet %s & netmask %s" % (net.name, net.ip.subnet, net.ip.netmask))
-    print("Gateway ip in network %s is %s" % (net.name, net.ip.subnet))
-    
-# Remove a network from the gateway
-gw.networks.remove("private") # remove network using its name 
-gw.networks.remove(privnet) # remove network using its object
-
-# Delete the gateway on the zero-os node
-node.primitives.drop_gateway(name="my-little-gw")
-
-# Create a new ubuntu vm [ubuntu:16.04/ubuntu:18.04/zero-os:1.2.1]
-ubuntu_vm = node.primitives.create_virtual_machine(name="my-little-ubuntu-vm", type_='ubuntu:16.04')
-ubuntu_vm.memory = 1024   # 1024 MiB
-ubuntu_vm.cpu_nr = 1      # 1 vcpu
-
-# Add disk named mark of type db [db, archive, temp]
-db_disk = ubuntu_vm.disks.add(name="mark", type=db)
-db_disk.size = 50   # 50 GiB
-db_disk.fs = 'ext4'              # optional. possible types: [ext4, btrfs, xfs]
-db_disk.mountpoint = '/mnt/mark'  # optional. must be used in combination of fs property
-                                 # if both are set the disk will be formatted and mountpoint will be added # in /etc/fstab. hot mounting is not supported while the vm is running, 
-                                 # hot adding the disk to the running vm is supported
-db_disk.url = zdb.namespaces["my-namespace"]     # See below how the zdb object gets created, convenience option
-db_disk.url = zdb.namespaces["my-namespace"].url # Can also set url directly
-print(db_disk.zdb_namespace)                     # ==> always return url, for loosely coupling different sals
-
-# Add vm to a network
-privnet = gw.networks['private']
-host = privnet.hosts.add_vm(host=ubuntu_vm, ipaddress='192.168.0.2')   # hot adding nics to a running vm 
-                                                                    # is supported
-
-host = privnet.hosts.add(name='myhostname', macaddress='54:42:01:02:03:04', ipaddress='192.168.0.2')   # add mac manually
-host = privnet.hosts.add(name='my2ndhost', macaddress=privnet.get_free_mac(), ipaddress='192.168.0.2')   # generate mac for network
-host.cloudinit.users.add(user='myuser', password='mypassword', sudo=False) # optional cloud init configuration
-host.cloudinit.metadata['local-hostname'] = 'myhostname'
-
-# cloudinit have userdata and metadata dict for custom cloud-init data
-print(host.name)    # name of vm object
-
-# privnet.hosts also supports indexing on host name (ubuntuvm.name), listing, and removing hosts
-
-# Redeploy the gw to add the host for real
-gw.deploy()
-
-# Deploy the vm
-ubuntu_vm.deploy()
-
-# Start the vm
-ubuntu_vm.start()
-
-# Pause the vm
-ubuntu_vm.pause()
-
-# Stop the vm
-ubuntu_vm.stop()
-
-# Serialize vm to json
-ubuntu_json_string = ubuntu_vm.to_json()
-
-# Deserialize vm from json
-ubuntu_vm = node.primitives.from_json(type="vm", json=ubuntu_json_string)
-
-# Deleting the vm 
-node.primitives.drop_vm("my-little-ubuntu-vm")
-
-# Create a new zero-os vm
-zeroos_vm = node.primitives.create_virtual_machine(name="my-little-ubuntu-vm", type_='zero-os')
-zeroos_vm.ipxe_url = 'https://bootstrap.gig.tech/ipxe/master/abcef01234567890/organization=myorg'
-zeroos_vm.memory = 1024   # 1024 MiB
-zeroos_vm.cpu_nr = 1      # 1 vcpu
-
-# Add disk named mark of type db [db, archive, temp]
-db_disk = zeroos_vm.disks.add(name="mark", url='zdb://172.18.0.1:9900?size=10G&blocksize=4096&namespace=mydisk')
-
-# Add a portforward from the public network to the private network to host 
-pubnet = gw.networks['public']
-privnet = gw.networks['private']
-pfwd = gw.portforwards.add(name='http')
-pfwd.source.ipaddress = '173.17.22.22'
-pfwd.source.port = 80
-pfwd.target.ipaddress = '192.168.0.2'
-pfwd.target.port = 8080
-gw.portforwards.add(name='https', ('173.17.22.22': 443), ('192.168.0.3', 443))
-gw.deploy() # deploy to make changes have effect
-# ... gw.portforwards also alows indexing on portforward name, listing and removing portforwards
-
-# ... add similar functions for reverse proxy configuration
-
-# Create a new zdb
-# Name will be used for creating the effective zero-os container
-zdb = node.primitives.create_zdb(name="my-zdb", disk='/mnt/zerodbs/vda')
-
-# create namespace
-namespace = zdb.namespaces.add('my-namespace')
-namespace.size = 20 # set namespace size
-namespace.password = 'secret' # set namespace password
-
-# deploy the new namespace to the zdb
-zdb.deploy()
-
-# get namespace information
-info = namespace.info()
-
-# get namespace url for kvm
-url = namespace.url
-
-# loop through the namespaces
-for namespace in zdb.namespaces:
-    print(namespace.size)
-
-# get a namespace by name
-namespace = zdb.namespaces["my-namespace"]
-print(namespace.size)
-
-# delete namespace
-zdb.namespaces.remove("my-namespace")  # Delete a namespace using its name
-zdb.namespaces.remove(namespace)       # Delete a namespace using object reference
-
-# Deleting a complete zbd
-node.primitives.drop_zdb("my-zdb")
-
-# Alternative way of adding a disk
-zdisk = node.primitives.create_disk('mydisk', zdb, '/mountpointinsidevm', 'ext4', 20)
-zddisk.deploy() # will create namespace on zdb and deploy it
-ubuntu_vm.disks.add('mydisk', zdisk)
-ubuntu_vm.deploy()
+Or on OpenvCloud:
 ```
+ipxe: https://bootstrap.gig.tech/ipxe/development/17d709436c5bc232/organization=zos-training-org%20development
+```
+
+=> https://ch-lug-dc01-001.gig.tech/CBGrid/Cloud%20Space?id=126
+10.147.18.166
+
+
+In case of not using a Zero-Tier en no IYO organization:
+```
+ipxe: https://bootstrap.gig.tech/ipxe/development/0/development
+
+```
+
+Used during tests:
+```
+ipxe: https://bootstrap.gig.tech/ipxe/development-update-e2fs/0/development
+```
+
+## Boot the Zero-OS node on OpenvCloud:
+
+Get a cloud space on an OpenvCloud environment:
+```python
+ovc_url = 'ch-lug-dc01-001.gig.tech'
+ovc_location = 'ch-gen-1'
+ovc_instance_name = 'switserland'
+ovc_cfg = dict(address=ovc_url, location=ovc_location)
+
+#ovc_config_instance = j.tools.configmanager.configure(location="j.clients.openvcloud", instance=ovc_instance_name, data=ovc_cfg)
+
+ovc_client = j.clients.openvcloud.get(instance=ovc_instance_name, data=ovc_cfg)
+#ovc_client = j.clients.openvcloud.get(instance=ovc_instance_name)
+
+ovc_account_name = 'Account_of_Yves'
+vdc_name = 'zero-space'
+
+ovc_account = ovc_client.account_get(name=ovc_account_name, create=False)
+cloud_space = ovc_account.space_get(name=vdc_name, create=True)
+#cloud_space = ovc_account.space_get(name=vdc_name, create=False)
+```
+
+Get the cloud space public IP address:
+```python
+cloudspace_public_ip_address = cloud_space.ipaddr_pub
+```
+
+
+Boot a VM with Zero-OS in the cloud space:
+```python
+vm_name = 'zero-os-yves'
+iyo_organization = 'zos-training-org'
+zos_kernel_params = ['organization={}'.format(iyo_organization), 'development']
+#zos_branch = 'development'
+zos_branch = 'development-update-e2fs'
+zt_network_id = '0' # no ZeroTier
+
+ipxe_url = 'ipxe: https://bootstrap.gig.tech/ipxe/{}/{}/'.format(zos_branch, zt_network_id) + '%20'.join(zos_kernel_params)
+
+zos_vm = cloud_space.machine_create(name=vm_name, memsize=8, disksize=50, image='IPXE Boot', authorize_ssh=False, userdata=ipxe_url)
+```
+
+In case you don't use a ZeroTier, you need a port forward for the Redis (6379) and for the Open vSwitch container (9900)
+```python
+zos_vm.portforward_create(publicport=6379, localport=6379)
+zos_vm.portforward_create(publicport=9900, localport=9900)
+```
+
+You also need to attach the external network directly to the VM, making it available for the Gateway container:
+```python 
+zos_vm.externalnetwork_attach()
+```
+
+We need the MAC address of the external network interface for configuring the Open vSwitch container later below:
+```python
+external_network_ip_address = zos_vm.model['interfaces'][1]['ipAddress']
+external_network_mac_address = zos_vm.model['interfaces'][1]['macAddress']
+```
+
+Also get the IP address of the internet gateway:
+```python
+external_gw_ip_address = zos_vm.model['interfaces'][1]['params'].split()[0].rsplit(':')[1]
+```
+
+## Set up connection
 
 Getting started:
 ```python
-zos_instance_name = 'zos-training-node'
+zos_instance_name = vm_name
 
 # Existing connection
 #j.clients.zero_os.list()
-zos_client = j.clients.zero_os.get(instance=zos_instance_name)
+#zos_client = j.clients.zos.get(instance=zos_instance_name)
 
 # New connection - first get your JWT
-iyo_organization = "zos-training-org"
 iyo_client = j.clients.itsyouonline.get(instance='main')
-memberof_scope = "user:memberof:{}".format(iyo_organization)
+memberof_scope = 'user:memberof:{}'.format(iyo_organization)
 jwt = iyo_client.jwt_get(scope=memberof_scope, refreshable=True)
 
 # New connection - then connect
-node_address = '10.147.18.213'
+#node_address = '10.147.18.166'
+node_address = cloudspace_public_ip_address
+
 zos_cfg = {"host": node_address, "port": 6379, "password_": jwt}
-zos_client = j.clients.zero_os.get(instance=zos_instance_name, data=zos_cfg)
+zos_client = j.clients.zos.get(instance=zos_instance_name, data=zos_cfg)
 
 # List the containers using the node interface
-zos_node = j.clients.zero_os.sal.get_node(instance=zos_instance_name)
+zos_node = j.clients.zos.sal.get_node(instance=zos_instance_name)
 zos_node.containers.list()
 ```
 
-Setup the ZeroTier client:
+To check the flist version that was used:
 ```python
-zt_instance_name = 'my_zt'
-zt_token = 'tFGYkdKutMR3crYA9FHfzVKKhMdbanDq'
-zt_cfg = dict([("token_", zt_token)])
+zos_node.client.info.version()
+```
+
+Configure the backplane bridge - not relevant in case you have only one node??? but needed in order to deploy the beloz GW: 
+```python
+ovs_container_name = 'ovs'
+zos_node.network.configure(cidr='192.168.69.0/24', vlan_tag=2312, ovs_container_name=ovs_container_name)
+```
+
+This creates another container, running Open vSwitch (`ovs`) bridging to the VLAN with tag `2312`:
+```python
+zos_node.containers.list()
+ovs_container = zos_node.containers.get(name=ovs_container_name)
+```
+
+If used, setup the ZeroTier client:
+```python
+zt_instance_name = 'myzt'
+zt_token = '**'
+zt_cfg = dict([('token_', zt_token)])
 zt_cl = j.clients.zerotier.get(instance=zt_instance_name, data=zt_cfg)
 #zt_cl = j.clients.zerotier.get(instance=zt_instance_name)
 ```
 
+## Gateway
 
-Gateway:
+Create a Gateway:
 ```python
 gw_name = 'my-little-gw'
 gw = zos_node.primitives.create_gateway(name=gw_name)
+```
 
-# There is no list gateways, since there is not state kept about this in the node, that's the job of the remote 0-robot, you simply need to now the container:
-gw_container = zos_node.containers.get(name=gw_name)
-#zos_node.primitives.drop_gateway(name=gw_name)
-#OR: gw_container.stop()
+> At this point the actual container is not yet created, this only happens later when executing `gw_container.deploy()`
 
-# Add a network with name 'public' using a vlan
-vlan_tag = 101
+Define a network with name 'public' using a vlan:
+```python
+vlan_tag = 0
 public_network_name = 'public'
-pubnet = gw.networks.add(name=public_network_name, type_='vlan', networkid=vlan_tag)
+public_net = gw.networks.add(name=public_network_name, type_='vlan', networkid=vlan_tag)
+public_net.ip.cidr = external_network_ip_address
+public_net.ip.gateway = external_gw_ip_address 
+public_net.hwaddr = external_network_mac_address
+```
 
-#pubnet.type = 'public'                  # one of [public/private], is used for firewall configuration
-#pubnet.vlantag = 100                    # vlan to be used for the pubnet 
-pubnet.ip.cidr = '185.69.166.2/24'      # ip/subnet to be used for the nic configuration of the gateway itself for pubnet
-pubnet.ip.gateway = '185.69.166.254'    # gateway to be used for the nic configuration 
-                                        # of the gateway itself for pubnet
+Define a network with name 'private':
+```python
+private_network_name = 'private'
+private_net = gw.networks.add(name=private_network_name, type_='vxlan', networkid=vlan_tag)
+private_net.ip.cidr = '192.168.103.1/24'
+private_net.hosts.nameservers = ['1.1.1.1']
+```
 
-# Add a network with name 'private' using a zerotier [vlan/vxlan/zerotier]
-private_zt_id = "9f77fc393e24babd"
-private_network_name = "private"
-privnet = gw.networks.add(name=private_network_name, type_="zerotier", networkid=private_zt_id)
-#privnet.networkid = 'jkhg53df3g'                 # If empty, zerotier network will be created 
-                                                  # automatically using token
-privnet.client = j.clients.zerotier.get(instance=zt_instance_name)  # Needed to create network and / or authorize 
-                                                  # gateway & vms into network
-privnet.ip.cidr = '192.168.0.1/24'                # ip/subnet to be used for the nic configuration of the gateway itself for privnet
-privnet.hosts.nameservers = ['8.8.8.8']           # nameservers that will be used by the hosts in privnet
-                                                  # if not set, defaults to ['8.8.8.8']
-
-# had to add this, in order to create an Open vSwitch container: 
-zos_node.network.configure(cidr='192.168.69.0/24', vlan_tag=2312, ovs_container_name='ovs')
-
-
-# Deploy the gateway to the zero-os node
+Deploy the gateway to the Zero-OS node
+```python
 gw.deploy()
 ```
 
-In order to get the preserve the 
+There is no list gateways, since there is no state kept about this in the node, that's the job of the remote 0-robot, you simply need to now the container - once deployed:
 ```python
-# Serialize the gateway configuration to json
-gw_json_string = gw.to_json()    # only contains gateway information, no vm details apart from host info
-                                 # (see further down)                               
+zos_node.containers.list()
+gw_container = zos_node.containers.get(name=gw_name)
+```
 
+Check the result:
+```python
+zos_node.client.bash('ip -d l').get()
+```
 
-# Instantiate gateway sal from json
+Serialize the gateway configuration to JSON: 
+```python
+gw_json_string = gw.to_json()    
+```
+
+This allows you to define a Gateway sal from JSON:                              
+```python
 gw = zos_node.primitives.from_json(type_="gateway", json=gw_json_string)
 ```
 
-
+Loop through the gateway networks:
 ```python
-# Reference network with name public
-pubnet = gw.networks['public']
-
-# Loop through gateway networks
 for net in gw.networks:
     print("Network %s uses subnet %s & netmask %s" % (net.name, net.ip.subnet, net.ip.netmask))
     print("Gateway ip in network %s is %s" % (net.name, net.ip.subnet))
-    
-# Remove a network from the gateway
-gw.networks.remove("private") # remove network using its name 
-gw.networks.remove(privnet) # remove network using its object
+```
 
-# Delete the gateway on the zero-os node
+In order to remove a network from the gateway:
+```python
+gw.networks.remove(public_network_name) # remove network using its name 
+gw.networks.remove(private_net) # remove network using its object
+```
+
+In order to delete the gateway from the Zero-OS node:
+```python
 zos_node.primitives.drop_gateway(name=gw_name)
 ```
 
-Create a new Ubuntu vm:
+Or:
 ```python
-# [ubuntu:16.04/ubuntu:18.04/zero-os:1.2.1]
-vm_name = "my-little-ubuntu-vm"
-ubuntu_vm = zos_node.primitives.create_virtual_machine(name=vm_name, type_='ubuntu:16.04')
-ubuntu_vm.memory = 1024   # 1024 MiB
-ubuntu_vm.cpu_nr = 1      # 1 vcpu
+gw_container.stop()
+```
+
+## Virtual Machine
+
+First create an SSH key for authenticating against the VM:
+```python
+sshkey_name = "my_sshkey"
+sshkey_path = "/root/.ssh/{}".format(sshkey_name)
+
+sshkey_client = j.clients.sshkey.key_generate(path=sshkey_path)
+```
+
+> Make sure to take one of the gig-booteable flists: https://hub.gig.tech/gig-bootable
+
+Create (define) a new Ubuntu virtual machine:
+```python
+vm_name = 'myvm'
+#vm = zos_node.primitives.create_virtual_machine(name=vm_name, type_='ubuntu:latest')
+#vm.flist = 'https://hub.gig.tech/gig-bootable/ubuntu:16.04.flist'
+vm = zos_node.primitives.create_virtual_machine(name=vm_name, type_='ubuntu:lts')
+
+#zos_node.primitives.drop_virtual_machine(name=vm_name)
+
+#vm.memory = 1024 
+#vm.cpu_nr = 1
+```
+
+Authorize the previously created key:
+```python
+vm.configs.add(name='mysshkey', path='/root/.ssh/authorized_keys', content=sshkey_client.pubkey)
+```
+
+Assign a IP address to the VM and create a user:
+```python
+host = private_net.hosts.add(host=vm, ipaddress='192.168.103.2')
+host.cloudinit.users.add('gig', 'rooter')
+```
+
+Enable HTTP access and create portforwarding for HTTP and SSH:  
+```python
+gw.httpproxies.add(name='myproxy', host=external_network_ip_address, destinations=['http://192.168.103.2:8080'], types=['http'])
+gw.portforwards.add(name='myforward1', source=(external_network_ip_address, 8080), target=('192.168.103.2', 8080))
+gw.portforwards.add(name='myforward2', source=(external_network_ip_address, 7122), target=('192.168.103.2', 22))
+```
+
+In case you need to remove this:
+```python
+gw.httpproxies.remove(name='myproxy')
+gw.portforwards.remove(name='myforward1')
+gw.portforwards.remove(name='myforward2')
+```
+
+Update the gateway:
+```python
+gw.deploy()
+```
+
+Deploy the virtual machine:
+```python
+vm.deploy()
+```
+
+
+## Zero-DB
+
+As a next step we will add a disk to the virtual machine. This requires us to first create a Zero-DB.
+
+In order to list the physical disks on the Zero-OS node:
+```python
+zos_node.disks.list()
 ```
 
 Create a Zero-DB:
 ```python
 zdb_name = 'myzdb'
 zdb_dir = '/var/cache/zdb'
-#zos_node.disks.list()
 zos_client.filesystem.mkdir(path=zdb_dir)
 zdb = zos_node.primitives.create_zerodb(name=zdb_name, path=zdb_dir)
-#zos_node.primitives.drop_zerodb(name=zdb_name)
-#OR: zdb_container=zos_node.containers.get(instance=zdb_name).stop()
 ```
 
-Create name space:
+In order to delete the Zero-DB do one of the following:
+```python
+zos_node.primitives.drop_zerodb(name=zdb_name)
+zdb_container = zos_node.containers.get(instance=zdb_name).stop()
+```
+
+Optionally create a namespace:
 ```python
 namespace_name = 'my-namespace'
-namespace = zdb.namespaces.add(name=namespace_name )
+namespace = zdb.namespaces.add(name=namespace_name)
 namespace.size = 20 # set namespace size
 namespace.password = 'secret' # set namespace password
+```
 
-# NOT NEEDED - is done automatically
+NOT NEEDED - is done automatically when deploying the ZDB
+```python
 nft = zos_node.client.nft
 nft.open_port(9900)
+```
 
-# deploy the new namespace to the zdb
+Deploy the new namespace to the zdb
+```python
 zdb.deploy()
+```
 
-# get namespace information
+Check again the nft, 9900 will be added, next to 6379 (Redis) en 6600 (Node Robot):
+```python
+nft = zos_node.client.nft
+nft.list()
+```
+
+Get namespace information:
+```python
+# List all namespaces 
+zdb.namespaces.list()
+
+# If no namespace was created explicitly, one will have been created with the default name of your disk - later:
+namespace = zdb.namespaces['mydisk']
 info = namespace.info()
 
 # get namespace url for kvm
@@ -348,66 +369,45 @@ print(namespace.size)
 # delete namespace
 zdb.namespaces.remove(item=namespace_name)  # Delete a namespace using its name
 zdb.namespaces.remove(item=namespace)       # Delete a namespace using object reference
-
-# Deleting a complete zbd
-node.primitives.drop_zdb("my-zdb")
 ```
 
-Create a disk:
+## Disk
+
+Create (define) a disk:
 ```python
 disk_name = 'mydisk'
-zdisk = zos_node.primitives.create_disk(name=disk_name, zdb=zdb, mountpoint='/mountpointinsidevm', filesystem='btrfs', size=20)
-zdisk.deploy() # will create namespace on zdb and deploy it
-ubuntu_vm.disks.add(name=disk_name , url_or_disk=zdisk)
-
-ubuntu_vm.deploy()
+disk = zos_node.primitives.create_disk(name=disk_name, zdb=zdb, mountpoint='/mountpointinsidevm', filesystem='btrfs') 
 ```
 
+Deploy the disk, will create namespace on zdb
+```python
+disk.deploy()
+```
 
+You need to restart the VM at this point, or later?
+```python
+zos_vm.restart()
+```
 
+Attach the disk:
+```python
+zdisk.deploy()
+vm.disks.add(name_or_disk=disk_name , url=zdisk)
+vm.deploy()
+```
 
+## Misc
 
 ```python
-# Add disk named mark of type db [db, archive, temp]
-db_disk = ubuntu_vm.disks.add(name="mark", url_or_disk="??")
-db_disk.size = 50   # 50 GiB
-db_disk.fs = 'ext4'              # optional. possible types: [ext4, btrfs, xfs]
-db_disk.mountpoint = '/mnt/mark'  # optional. must be used in combination of fs property
-                                 # if both are set the disk will be formatted and mountpoint will be added # in /etc/fstab. hot mounting is not supported while the vm is running, 
-                                 # hot adding the disk to the running vm is supported
-db_disk.url = zdb.namespaces["my-namespace"]     # See below how the zdb object gets created, convenience option
-db_disk.url = zdb.namespaces["my-namespace"].url # Can also set url directly
-print(db_disk.zdb_namespace)                     # ==> always return url, for loosely coupling different sals
-
-# Add vm to a network
-privnet = gw.networks['private']
-host = privnet.hosts.add_vm(host=ubuntu_vm, ipaddress='192.168.0.2')   # hot adding nics to a running vm 
-                                                                    # is supported
-
-host = privnet.hosts.add(name='myhostname', macaddress='54:42:01:02:03:04', ipaddress='192.168.0.2')   # add mac manually
-host = privnet.hosts.add(name='my2ndhost', macaddress=privnet.get_free_mac(), ipaddress='192.168.0.2')   # generate mac for network
-host.cloudinit.users.add(user='myuser', password='mypassword', sudo=False) # optional cloud init configuration
-host.cloudinit.metadata['local-hostname'] = 'myhostname'
-
-# cloudinit have userdata and metadata dict for custom cloud-init data
-print(host.name)    # name of vm  object
-
-# privnet.hosts also supports indexing on host name (ubuntuvm.name), listing, and removing hosts
-
-# Redeploy the gw to add the host for real
-gw.deploy()
-
-# Deploy the vm
-ubuntu_vm.deploy()
 
 # Start the vm
-ubuntu_vm.start()
+vm.start()
 
 # Pause the vm
-ubuntu_vm.pause()
+vm.pause()
 
 # Stop the vm
-ubuntu_vm.stop()
+vm.stop()
 
 # Serialize vm to json
 ubuntu_json_string = ubuntu_vm.to_json()
@@ -418,28 +418,7 @@ ubuntu_vm = node.primitives.from_json(type="vm", json=ubuntu_json_string)
 # Deleting the vm 
 node.primitives.drop_vm("my-little-ubuntu-vm")
 
-# Create a new zero-os vm
-zeroos_vm = node.primitives.create_virtual_machine(name="my-little-ubuntu-vm", type_='zero-os')
-zeroos_vm.ipxe_url = 'https://bootstrap.gig.tech/ipxe/master/abcef01234567890/organization=myorg'
-zeroos_vm.memory = 1024   # 1024 MiB
-zeroos_vm.cpu_nr = 1      # 1 vcpu
 
-# Add disk named mark of type db [db, archive, temp]
-db_disk = zeroos_vm.disks.add(name="mark", url='zdb://172.18.0.1:9900?size=10G&blocksize=4096&namespace=mydisk')
-
-# Add a portforward from the public network to the private network to host 
-pubnet = gw.networks['public']
-privnet = gw.networks['private']
-pfwd = gw.portforwards.add(name='http')
-pfwd.source.ipaddress = '173.17.22.22'
-pfwd.source.port = 80
-pfwd.target.ipaddress = '192.168.0.2'
-pfwd.target.port = 8080
-gw.portforwards.add(name='https', ('173.17.22.22': 443), ('192.168.0.3', 443))
-gw.deploy() # deploy to make changes have effect
-# ... gw.portforwards also alows indexing on portforward name, listing and removing portforwards
-
-# ... add similar functions for reverse proxy configuration
 ```
 
 

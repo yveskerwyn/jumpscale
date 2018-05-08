@@ -1,6 +1,14 @@
 
 ## Getting started with JumpScale 9.3.0 Demo Script
 
+- [Installation of JumpSale](#installation)
+- [SAL](sal)
+- [Prefab](#prefab)
+- [Config Manager](#config-manager)
+- [Clients](clients)
+- [Node Manager](#nodemanager)
+- [Executor](#executor)
+
 ## Installation of JumpSale
 
 From command line:
@@ -26,8 +34,8 @@ j.sal.fs.writeFile(path, 'hello world!')
 j.sal.fs.readFile(path)
 'hello world!'
 ```
+## Prefab
 
-Prefab:
 ```python
 local_prefab = j.tools.prefab.local
 local_prefab.network.zerotier.install()
@@ -141,7 +149,6 @@ pip install zerotier
 pip install ipcalc
 ```
 
-
 If you already have a configuration instance for Packet.net:
 ```python
 packet_cfg_instance_name = "yves"
@@ -156,7 +163,7 @@ packet_cfg = dict(auth_token_=packet_api_key, project_name=packet_project_name)
 packet_client = j.clients.packetnet.get(instance=packet_cfg_instance_name, data=packet_cfg)
 ```
 
-Boot a Zero-OS node on Packet.net using
+Boot a Zero-OS node on Packet.net:
 ```python
 zos_host_name = 'zos-training-node'
 zos_kernel_params = ['organization={}'.format(iyo_organization), 'development']
@@ -169,9 +176,6 @@ zos_client, zos_node, zt_ip_address = packet_client.startZeroOS(hostname=zos_hos
 ipxe_url = 'http://unsecure.bootstrap.gig.tech/ipxe/{}/{}/'.format(zos_branch, zt_network_id) + '%20'.join(zos_kernel_params)
 zos_node = packet_client.startDevice(hostname=zos_host_name, plan='x1.small', facility='ams1', os='', ipxeUrl=ipxe_url)
 ```
-
-
-
 
 In the last case we still need to authorize the ZT join request:
 ```python
@@ -193,34 +197,36 @@ zt_ip_address = zos_member.private_ip
 
 ## OpenvCloud
 
-
+Get a cloud space on an OpenvCloud environment:
 ```python
-url = "se-sto-en01-001.gig.tech"
-location = "se-gen-1"
-ovc_cfg = dict(address=url, location=location)
+ovc_url = 'se-sto-en01-001.gig.tech'
+ovc_location = 'se-gen-1'
+ovc_instance_name = 'sweden'
+ovc_cfg = dict(address=ovc_url, location=ovc_location)
 
+ovc_config_instance = j.tools.configmanager.configure(location="j.clients.openvcloud", instance=ovc_instance_name, data=ovc_cfg)
 
-ovc_config_instance = j.tools.configmanager.configure(location="j.clients.openvcloud", instance="main", data=ovc_cfg)
+ovc_client = j.clients.openvcloud.get(instance=ovc_instance_name)
 
+ovc_account_name = 'yves'
+vdc_name = 'zero-space'
 
-ovc_client = j.clients.openvcloud.get(instance="main")
-
-
-account_name = "yves"
-vdc_name = "zero-space"
-
-location = ovc_client.locations[0]["name"]
-account = ovc_client.account_get(name=account_name, create=False)
-cloud_space = account.space_get(name=vdc_name, create=True, location=location)
-#cloud_space = account.space_get(name=vdc_name, create=False, location=location)
+ovc_account = ovc_client.account_get(name=ovc_account_name, create=False)
+cloud_space = ovc_account.space_get(name=vdc_name, create=True)
+#cloud_space = ovc_account.space_get(name=vdc_name, create=False)
 ```
 
+Boot a VM with Zero-OS  in the cloud space:
+```python
+vm_name = 'zos-vm'
+zos_kernel_params = ['organization={}'.format(iyo_organization), 'development']
+zos_branch = 'development'
 
+ipxe_url = 'ipxe: https://bootstrap.gig.tech/ipxe/{}/{}/'.format(zos_branch, zt_network_id) + '%20'.join(zos_kernel_params)
+zos_vm = cloud_space.machine_create(name=vm_name, image='IPXE Boot', authorize_ssh=False, userdata=ipxe_url)
+```
 
-See:
-https://se-sto-en01-001.gig.tech/system/ActorApi?group=cloudapi#!/cloudapi__machines/post_cloudapi_machines_create
-
-There is now a `userdata` argument in the `machines_create` Cloud API end point, will be available in the OVC client too, pass the iPXE value there, as indiciated in https://github.com/0-complexity/openvcloud_ays/blob/master/_images/image_ipxe/readme.md
+There is now a `userdata` argument in the `machines_create` Cloud API end point, will be available in the OVC client too, pass the iPXE value there, as indicated in https://github.com/0-complexity/openvcloud_ays/blob/master/_images/image_ipxe/readme.md
 
 
 <a id="zos"></a>
