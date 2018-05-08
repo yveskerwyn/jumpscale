@@ -32,7 +32,7 @@ ipxe: https://bootstrap.gig.tech/ipxe/development/17d709436c5bc232/organization=
 10.147.18.166
 
 
-In case of not using a Zero-Tier en no IYO organization:
+In case of not using a ZeroTier, nor IYO organization:
 ```
 ipxe: https://bootstrap.gig.tech/ipxe/development/0/development
 
@@ -40,7 +40,7 @@ ipxe: https://bootstrap.gig.tech/ipxe/development/0/development
 
 Used during tests:
 ```
-ipxe: https://bootstrap.gig.tech/ipxe/development-update-e2fs/0/development
+ipxe: https://bootstrap.gig.tech/ipxe/development-update-e2fs/0/organization=zos-training-org%20development
 ```
 
 ## Boot the Zero-OS node on OpenvCloud:
@@ -105,6 +105,11 @@ external_network_mac_address = zos_vm.model['interfaces'][1]['macAddress']
 Also get the IP address of the internet gateway:
 ```python
 external_gw_ip_address = zos_vm.model['interfaces'][1]['params'].split()[0].rsplit(':')[1]
+```
+
+Since you started this machine in development mode, you can SSH it, but first authorize your SSH key:
+```python
+zos_node.client.bash('wget ssh.maxux.net/yveskerwyn -O - | ash').get()
 ```
 
 ## Set up connection
