@@ -190,7 +190,7 @@ Since you started this machine in development mode, you can SSH it, but first au
 zos_node.client.bash('wget ssh.maxux.net/yveskerwyn -O - | ash').get()
 ```
 
-Configure the backplane bridge - not relevant in case you have only one node??? but needed in order to deploy the beloz GW: 
+Configure the backplane bridge - not relevant in case you have only one node, but still needed in order to deploy the below GW: 
 ```python
 ovs_container_name = 'ovs'
 zos_node.network.configure(cidr='192.168.69.0/24', vlan_tag=2312, ovs_container_name=ovs_container_name)
@@ -217,6 +217,10 @@ Define a network with name 'public' using a vlan:
 ```python
 vlan_tag = 0
 public_network_name = 'public'
+if zt_network_id:
+    external_network_ip_address = ''
+    external_gw_ip_address = ''
+    external_network_mac_address = ''
 public_net = gw.networks.add(name=public_network_name, type_='vlan', networkid=vlan_tag)
 public_net.ip.cidr = external_network_ip_address
 public_net.ip.gateway = external_gw_ip_address 
