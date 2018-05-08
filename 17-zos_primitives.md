@@ -275,16 +275,16 @@ host.cloudinit.users.add('gig', 'rooter')
 
 Enable HTTP access and create portforwarding for HTTP and SSH:  
 ```python
-gw.httpproxies.add(name='myproxy', host=external_network_ip_address, destinations=['http://192.168.103.2:8080'], types=['http'])
-gw.portforwards.add(name='myforward1', source=(external_network_ip_address, 8080), target=('192.168.103.2', 8080))
-gw.portforwards.add(name='myforward2', source=(external_network_ip_address, 7122), target=('192.168.103.2', 22))
+gw.httpproxies.add(name='myproxy', host=public_net.ip.address, destinations=['http://192.168.103.2:8080'], types=['http'])
+gw.portforwards.add(name='myforward1', source=(public_net.ip.address, 8080), target=('192.168.103.2', 8080))
+gw.portforwards.add(name='myforward2', source=(public_net.ip.address, 7122), target=('192.168.103.2', 22))
 ```
 
 In case you need to remove this:
 ```python
-gw.httpproxies.remove(name='myproxy')
-gw.portforwards.remove(name='myforward1')
-gw.portforwards.remove(name='myforward2')
+gw.httpproxies.remove('myproxy')
+gw.portforwards.remove('myforward1')
+gw.portforwards.remove('myforward2')
 ```
 
 Update the gateway:
