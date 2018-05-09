@@ -172,8 +172,6 @@ Since you started this machine in development mode, you can SSH it, but first au
 #zos_node.client.bash('wget ssh.maxux.net/yveskerwyn -O - | ash').get()
 zos_node.client.bash('echo "{}" >> /root/.ssh/authorized_keys'.format(key)).get()
 zos_node.client.nft.open_port(22)
-
-
 ```
 
 Create an Open vSwitch (OVS) container, needed in order to deploy the below GW: 
