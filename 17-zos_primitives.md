@@ -1,55 +1,10 @@
-# Zero-OS Primitives
+# Getting started with the Zero-OS Primitives
 
-## Test data
+## Create the ZeroTier network
 
-Specifications:
-https://github.com/Jumpscale/lib9/blob/zosprimitives/specs/zero-os-primitives.md
-
-Tested from:
-- https://be-gen-1.demo.greenitglobe.com/CBGrid/Virtual%20Machine?id=2841
-- `ssh root@195.134.212.38 -p7722`
-
-ZeroTier network:
-https://my.zerotier.com/network/17d709436c5bc232
-
-ItsYou.online organization:
-https://itsyou.online/#/organization/zos-training-org/people
-
-Bootstrap iPXE URL:
-- https://bootstrap.gig.tech/ipxe/development/17d709436c5bc232/organization=zos-training-org%20development
-- http://unsecure.bootstrap.gig.tech/ipxe/development/17d709436c5bc232/organization=zos-training-org%20development
-
-Packet.net:
-- name: zos-training-node:
-- URL: https://app.packet.net/devices/3fe15ec2-eec5-4784-b2ed-e5a0cd3755f5
-
-Or on OpenvCloud:
-```
-ipxe: https://bootstrap.gig.tech/ipxe/development/17d709436c5bc232/organization=zos-training-org%20development
-```
-
-=> https://ch-lug-dc01-001.gig.tech/CBGrid/Cloud%20Space?id=126
-10.147.18.166
-
-
-In case of not using a ZeroTier, nor IYO organization:
-```
-ipxe: https://bootstrap.gig.tech/ipxe/development/0/development
-
-```
-
-Used during tests:
-```
-ipxe: https://bootstrap.gig.tech/ipxe/development-update-e2fs/0/organization=zos-training-org%20development
-```
-
-
-## Join the ZeroTier network
-
-Only need if you work with a ZeroTier.
 
 ```python
-zt_network_id = '0' # no ZeroTier
+zt_network_id = '0' # if no ZeroTier
 zt_network_id = '17d709436c5bc232'
 local_prefab = j.tools.prefab.local
 ```
@@ -60,48 +15,66 @@ local_prefab.network.zerotier.install()
 local_prefab.network.zerotier.start()
 ```
 
+```python
+zt_instance_name = 'myzt'
+zt_token = 'tFGYkdKutMR3crYA9FHfzVKKhMdbanDq'
+zt_cfg = dict([('token_', zt_token)])
+zt_client = j.clients.zerotier.get(instance=zt_instance_name, data=zt_cfg)
+#zt_client = j.clients.zerotier.get(instance=zt_instance_name)
+```
+
+Create the network:
+```python
+zt_network_name = 'my_zt_network'
+zt_routes = [{'target': '10.147.18.0/24', 'via': None}]
+
+zt_network = zt_client.network_create(public=False, name=zt_network_name, routes=zt_routes)
+zt_network_id = zt_network.id
+
+# zt_network.config['ipAssignmentPools']
+```
+
+
+
+## Join the ZeroTier network
+
 Join:
 ```python
-local_prefab.network.zerotier.network_join(network_id=zt_network_id)
+j.tools.prefab.local.network.zerotier.network_join(network_id=zt_network_id)
 ```
 
 Authorize the join request:
 ```python
-zt_instance_name = 'myzt'
-zt_token = '**'
-zt_cfg = dict([('token_', zt_token)])
-zt_client = j.clients.zerotier.get(instance=zt_instance_name, data=zt_cfg)
-#zt_client = j.clients.zerotier.get(instance=zt_instance_name)
+zt_machine_addr = j.tools.prefab.local.network.zerotier.get_zerotier_machine_address()
 
-zt_machine_addr = local_prefab.network.zerotier.get_zerotier_machine_address()
-
-zt_network = zt_client.network_get(network_id=zt_network_id)
+#zt_network = zt_client.network_get(network_id=zt_network_id)
 
 zos_member = zt_network.member_get(address=zt_machine_addr)
-
 zos_member.authorize()
 ```
 
 ## Boot the Zero-OS node on OpenvCloud:
 
-Get a cloud space on an OpenvCloud environment:
+Get a client for OpenvCloud:
 ```python
 ovc_url = 'ch-lug-dc01-001.gig.tech'
 ovc_location = 'ch-gen-1'
 ovc_instance_name = 'switserland'
 ovc_cfg = dict(address=ovc_url, location=ovc_location)
 
-#ovc_config_instance = j.tools.configmanager.configure(location="j.clients.openvcloud", instance=ovc_instance_name, data=ovc_cfg)
-
 ovc_client = j.clients.openvcloud.get(instance=ovc_instance_name, data=ovc_cfg)
 #ovc_client = j.clients.openvcloud.get(instance=ovc_instance_name)
+```
 
+Get to your OpenvCloud account:
+```python
 ovc_account_name = 'Account_of_Yves'
-vdc_name = 'zero-space2'
-
 ovc_account = ovc_client.account_get(name=ovc_account_name, create=False)
+```
+Create/get a cloud space (virtual datacenter)
+```python
+vdc_name = 'zero-space'
 cloud_space = ovc_account.space_get(name=vdc_name, create=True)
-#cloud_space = ovc_account.space_get(name=vdc_name, create=False)
 ```
 
 Get the public IP address of the cloud space:
@@ -114,32 +87,31 @@ Boot a VM with Zero-OS in the cloud space:
 vm_name = 'zero-os-yves'
 iyo_organization = 'zos-training-org'
 zos_kernel_params = ['organization={}'.format(iyo_organization), 'development']
-#zos_branch = 'development'
-zos_branch = 'development-update-e2fs'
+zos_branch = 'development'
 
 ipxe_url = 'ipxe: https://bootstrap.gig.tech/ipxe/{}/{}/'.format(zos_branch, zt_network_id) + '%20'.join(zos_kernel_params)
 
-zos_vm = cloud_space.machine_create(name=vm_name, memsize=8, disksize=50, image='IPXE Boot', authorize_ssh=False, userdata=ipxe_url)
+zos_vm = cloud_space.machine_create(name=vm_name, memsize=8, disksize=10, datadisks=[50], image='IPXE Boot', authorize_ssh=False, userdata=ipxe_url)
 ```
 
-If you specified a ZeroTier network, setup the ZeroTier client and authorize the join request from the Zero-OS node:
+If you specified a ZeroTier network, authorize the join request from the Zero-OS node:
 ```python
 zos_member = zt_network.member_get(public_ip=cloudspace_public_ip_address)
 zos_member.authorize()
 ```
 
-In case you don't use a ZeroTier (`zt_network_id = 0`), you need a port forward for the Redis (6379) and for the Open vSwitch container (9900)
+In case you don't use a ZeroTier (`zt_network_id = 0`), you need a port forward for the Redis (6379) and optionaly for the Open vSwitch container (9900)
 ```python
 zos_vm.portforward_create(publicport=6379, localport=6379)
-zos_vm.portforward_create(publicport=9900, localport=9900)
+#zos_vm.portforward_create(publicport=9900, localport=9900)
 ```
 
-In that case you also need to attach the external network directly to the VM, making it available for the Gateway container:
+Attach an external network directly to the VM, making it available for the gateway container:
 ```python 
 zos_vm.externalnetwork_attach()
 ```
 
-We need the MAC address of the external network interface for configuring the Open vSwitch container later below:
+We need the IP and MAC address of Zero-OS node on the external network interface, for connecting to the gataway:
 ```python
 external_network_ip_address = zos_vm.model['interfaces'][1]['ipAddress']
 external_network_mac_address = zos_vm.model['interfaces'][1]['macAddress']
@@ -185,12 +157,26 @@ To check the flist version that was used:
 zos_node.client.info.version()
 ```
 
-Since you started this machine in development mode, you can SSH it, but first authorize your SSH key:
+First create an SSH key for authenticating against the VM:
 ```python
-zos_node.client.bash('wget ssh.maxux.net/yveskerwyn -O - | ash').get()
+sshkey_name = "my_sshkey"
+sshkey_path = "/root/.ssh/{}".format(sshkey_name)
+
+sshkey_client = j.clients.sshkey.key_generate(path=sshkey_path)
+#sshkey_client = j.clients.sshkey.get(sshkey_name)
 ```
 
-Configure the backplane bridge - not relevant in case you have only one node, but still needed in order to deploy the below GW: 
+
+Since you started this machine in development mode, you can SSH it, but first authorize your SSH key:
+```python
+#zos_node.client.bash('wget ssh.maxux.net/yveskerwyn -O - | ash').get()
+zos_node.client.bash('echo "{}" >> /root/.ssh/authorized_keys'.format(key)).get()
+zos_node.client.nft.open_port(22)
+
+
+```
+
+Create an Open vSwitch (OVS) container, needed in order to deploy the below GW: 
 ```python
 ovs_container_name = 'ovs'
 zos_node.network.configure(cidr='192.168.69.0/24', vlan_tag=2312, ovs_container_name=ovs_container_name)
@@ -207,7 +193,7 @@ ovs_container = zos_node.containers.get(name=ovs_container_name)
 
 Create a Gateway:
 ```python
-gw_name = 'my-little-gw'
+gw_name = 'my-gw'
 gw = zos_node.primitives.create_gateway(name=gw_name)
 ```
 
@@ -217,10 +203,7 @@ Define a network with name 'public' using a vlan:
 ```python
 vlan_tag = 0
 public_network_name = 'public'
-if zt_network_id:
-    external_network_ip_address = ''
-    external_gw_ip_address = ''
-    external_network_mac_address = ''
+
 public_net = gw.networks.add(name=public_network_name, type_='vlan', networkid=vlan_tag)
 public_net.ip.cidr = external_network_ip_address
 public_net.ip.gateway = external_gw_ip_address 
@@ -230,9 +213,15 @@ public_net.hwaddr = external_network_mac_address
 Define a network with name 'private':
 ```python
 private_network_name = 'private'
-private_net = gw.networks.add(name=private_network_name, type_='vxlan', networkid=vlan_tag)
+vlxan_tag = 100
+private_net = gw.networks.add(name=private_network_name, type_='vxlan', networkid=vlxan_tag)
 private_net.ip.cidr = '192.168.103.1/24'
 private_net.hosts.nameservers = ['1.1.1.1']
+```
+
+Check:
+```python
+gw.to_dict()
 ```
 
 Deploy the gateway to the Zero-OS node
@@ -286,14 +275,6 @@ gw_container.stop()
 
 ## Virtual Machine
 
-First create an SSH key for authenticating against the VM:
-```python
-sshkey_name = "my_sshkey"
-sshkey_path = "/root/.ssh/{}".format(sshkey_name)
-
-sshkey_client = j.clients.sshkey.key_generate(path=sshkey_path)
-```
-
 > Make sure to take one of the gig-booteable flists: https://hub.gig.tech/gig-bootable
 
 Create (define) a new Ubuntu virtual machine:
@@ -317,7 +298,7 @@ vm.configs.add(name='mysshkey', path='/root/.ssh/authorized_keys', content=sshke
 Assign a IP address to the VM and create a user:
 ```python
 host = private_net.hosts.add(host=vm, ipaddress='192.168.103.2')
-host.cloudinit.users.add('gig', 'rooter')
+#host.cloudinit.users.add('gig', 'rooter')
 ```
 
 Enable HTTP access and create portforwarding for HTTP and SSH:  
@@ -339,9 +320,9 @@ Update the gateway:
 gw.deploy()
 ```
 
-Deploy the virtual machine:
+We will deploy the virtual machine later, after having added a disk:
 ```python
-vm.deploy()
+#vm.deploy()
 ```
 
 
@@ -352,6 +333,11 @@ As a next step we will add a disk to the virtual machine. This requires us to fi
 In order to list the physical disks on the Zero-OS node:
 ```python
 zos_node.disks.list()
+```
+
+First shutdown the VM - or do this earlier:
+```python
+vm.shutdown()
 ```
 
 Create a Zero-DB:
@@ -366,14 +352,6 @@ In order to delete the Zero-DB do one of the following:
 ```python
 zos_node.primitives.drop_zerodb(name=zdb_name)
 zdb_container = zos_node.containers.get(instance=zdb_name).stop()
-```
-
-Optionally create a namespace:
-```python
-namespace_name = 'my-namespace'
-namespace = zdb.namespaces.add(name=namespace_name)
-namespace.size = 20 # set namespace size
-namespace.password = 'secret' # set namespace password
 ```
 
 NOT NEEDED - is done automatically when deploying the ZDB
@@ -392,6 +370,44 @@ Check again the nft, 9900 will be added, next to 6379 (Redis) en 6600 (Node Robo
 nft = zos_node.client.nft
 nft.list()
 ```
+
+## Disk
+
+Create (define) a disk:
+```python
+zdisk_name = 'mydisk'
+zdisk = zos_node.primitives.create_disk(name=zdisk_name, zdb=zdb, mountpoint='/mnt', filesystem='btrfs') 
+#zdisk.mountpoint = '/mnt'
+```
+
+Deploy the disk, will create namespace on zdb
+```python
+zdisk.deploy()
+```
+
+Attach the disk:
+```python
+vm.disks.add(name_or_disk=zdisk)
+vm.deploy()
+```
+
+## Start a HTTP server
+
+SSH into machine:
+```bash
+python3 -m http.server 8080
+```
+
+## Misc
+
+Optionally create a namespace:
+```python
+namespace_name = 'my-namespace'
+namespace = zdb.namespaces.add(name=namespace_name)
+namespace.size = 20 # set namespace size
+namespace.password = 'secret' # set namespace password
+```
+
 
 Get namespace information:
 ```python
@@ -418,40 +434,15 @@ zdb.namespaces.remove(item=namespace_name)  # Delete a namespace using its name
 zdb.namespaces.remove(item=namespace)       # Delete a namespace using object reference
 ```
 
-## Disk
-
-Create (define) a disk:
 ```python
-zdisk_name = 'mydisk'
-zdisk = zos_node.primitives.create_disk(name=disk_name, zdb=zdb, mountpoint='/mountpointinsidevm', filesystem='btrfs') 
-```
-
-Deploy the disk, will create namespace on zdb
-```python
-zdisk.deploy()
-```
-
-You need to restart the VM at this point, or later?
-```python
-zos_vm.restart()
-```
-
-Attach the disk:
-```python
-zdisk.deploy()
-vm.disks.add(name_or_disk=zdisk)
-vm.deploy()
-```
-
-## Misc
-
-```python
-
 # Start the vm
 vm.start()
 
 # Pause the vm
 vm.pause()
+
+# Resume the vm
+vm.resume()
 
 # Stop the vm
 vm.stop()
