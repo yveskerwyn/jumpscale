@@ -1,7 +1,25 @@
 # Getting started with the Zero-OS Primitives
 
-## Create the ZeroTier network
+- [Create the ZeroTier network](#create-zt-network)
+- [Join the ZeroTier network](#join-zt-network)
+- [Boot the Zero-OS node on OpenvCloud](#boot-zos)
+- [Connect using the JumpScale client for Zero-OS](#zos-client)
+- [Authorize SSH key in Zero-OS node](#authorize-sshkey)
+- [Create an Open vSwitch (OVS) container](#ovs-container)
+- [Create the Zero-OS gateway](#create-gw)
+- [Create a virtual machine](#create-vm)
+- [Authorize SSH key in virtual machine](#authorize-sshkey2)
+- [Assign a IP address to the virtual machine](#assign-ip)
+- [Configure reverse proxy](#reverse-proxy)
+- [Add port forwards to virtual machine](#port-forwards)
+- [Create Zero-DB](#create-zdb)
+- [Create and attach a disk](#create-disk)
+- [Test HTTP access](#http-access)
 
+
+<a id="create-zt-network"></a>
+
+## Create the ZeroTier network
 
 ```python
 zt_network_id = '0' # if no ZeroTier
@@ -15,9 +33,10 @@ local_prefab.network.zerotier.install()
 local_prefab.network.zerotier.start()
 ```
 
+Get a JumpScale client for ZeroTier:
 ```python
 zt_instance_name = 'myzt'
-zt_token = 'tFGYkdKutMR3crYA9FHfzVKKhMdbanDq'
+zt_token = '***'
 zt_cfg = dict([('token_', zt_token)])
 zt_client = j.clients.zerotier.get(instance=zt_instance_name, data=zt_cfg)
 #zt_client = j.clients.zerotier.get(instance=zt_instance_name)
@@ -34,7 +53,7 @@ zt_network_id = zt_network.id
 # zt_network.config['ipAssignmentPools']
 ```
 
-
+<a id="join-zt-network"></a>
 
 ## Join the ZeroTier network
 
@@ -53,7 +72,9 @@ zos_member = zt_network.member_get(address=zt_machine_addr)
 zos_member.authorize()
 ```
 
-## Boot the Zero-OS node on OpenvCloud:
+<a id="boot-zos"></a>
+
+## Boot the Zero-OS node on OpenvCloud
 
 Get a client for OpenvCloud:
 ```python
@@ -122,23 +143,34 @@ Also get the IP address of the internet gateway:
 external_gw_ip_address = zos_vm.model['interfaces'][1]['params'].split()[0].rsplit(':')[1]
 ```
 
-## Set up connection
+<a id="zos-client"></a>
 
-Getting started:
+## Connect using the JumpScale client for Zero-OS
+
+Check the existing configuration instances:
+```python
+j.clients.zero_os.list()
+```
+
+Name of the Zero-OS configuration instance:
 ```python
 zos_instance_name = vm_name
+```
 
-# Existing connection
-#j.clients.zero_os.list()
-#zos_client = j.clients.zos.get(instance=zos_instance_name)
+For an existing connection:
+```python
+zos_client = j.clients.zos.get(instance=zos_instance_name)
+```
 
-# New connection - first get your JWT
+For a new connection, first get your JWT:
+```python
 iyo_client = j.clients.itsyouonline.get(instance='main')
 memberof_scope = 'user:memberof:{}'.format(iyo_organization)
 jwt = iyo_client.jwt_get(scope=memberof_scope, refreshable=True)
+```
 
-# New connection - then connect
-#node_address = '10.147.18.166'
+Create a new connection:
+```python
 if zt_network_id == 0:
     node_address = cloudspace_public_ip_address
 else:
@@ -146,8 +178,9 @@ else:
 
 zos_cfg = {"host": node_address, "port": 6379, "password_": jwt}
 zos_client = j.clients.zos.get(instance=zos_instance_name, data=zos_cfg)
-
-# List the containers using the node interface
+```
+Get the node interface and list the containers:
+```python
 zos_node = j.clients.zos.sal.get_node(instance=zos_instance_name)
 zos_node.containers.list()
 ```
@@ -157,7 +190,13 @@ To check the flist version that was used:
 zos_node.client.info.version()
 ```
 
-First create an SSH key for authenticating against the VM:
+<a id="authenticate-sshkey"></a>
+
+## Authorize SSH key in Zero-OS node
+
+Since the machine was started development mode, you can SSH it.
+
+First create a new SSH key, using the `sshkey` client:
 ```python
 sshkey_name = "my_sshkey"
 sshkey_path = "/root/.ssh/{}".format(sshkey_name)
@@ -166,15 +205,18 @@ sshkey_client = j.clients.sshkey.key_generate(path=sshkey_path)
 #sshkey_client = j.clients.sshkey.get(sshkey_name)
 ```
 
-
-Since you started this machine in development mode, you can SSH it, but first authorize your SSH key:
+ Authorize the new SSH key:
 ```python
 #zos_node.client.bash('wget ssh.maxux.net/yveskerwyn -O - | ash').get()
 zos_node.client.bash('echo "{}" >> /root/.ssh/authorized_keys'.format(key)).get()
 zos_node.client.nft.open_port(22)
 ```
 
-Create an Open vSwitch (OVS) container, needed in order to deploy the below GW: 
+<a id="ovs-container"></a>
+
+## Create an Open vSwitch (OVS) container
+
+The Open vSwitch (OVS) container, needed in order to deploy the below GW: 
 ```python
 ovs_container_name = 'ovs'
 zos_node.network.configure(cidr='192.168.69.0/24', vlan_tag=2312, ovs_container_name=ovs_container_name)
@@ -186,8 +228,9 @@ zos_node.containers.list()
 ovs_container = zos_node.containers.get(name=ovs_container_name)
 ```
 
+<a id="create-gw"></a>
 
-## Gateway
+## Create the Zero-OS gateway
 
 Create a Gateway:
 ```python
@@ -271,7 +314,9 @@ Or:
 gw_container.stop()
 ```
 
-## Virtual Machine
+<a id="create-vm"></a>
+
+## Create a virtual machine
 
 > Make sure to take one of the gig-booteable flists: https://hub.gig.tech/gig-bootable
 
@@ -288,20 +333,37 @@ vm = zos_node.primitives.create_virtual_machine(name=vm_name, type_='ubuntu:lts'
 #vm.cpu_nr = 1
 ```
 
+<a id="authorize-sshkey2"></a>
+
+## Authorize SSH key in virtual machine
+
 Authorize the previously created key:
 ```python
 vm.configs.add(name='mysshkey', path='/root/.ssh/authorized_keys', content=sshkey_client.pubkey)
 ```
 
-Assign a IP address to the VM and create a user:
+<a id="assign-ip"></a>
+
+## Assign a IP address to the virtual machine
+
 ```python
 host = private_net.hosts.add(host=vm, ipaddress='192.168.103.2')
 #host.cloudinit.users.add('gig', 'rooter')
 ```
 
-Enable HTTP access and create portforwarding for HTTP and SSH:  
+<a id="reverse-proxy"></a>
+
+## Configure reverse proxy
+
 ```python
 gw.httpproxies.add(name='myproxy', host=public_net.ip.address, destinations=['http://192.168.103.2:8080'], types=['http'])
+```
+
+<a id="port-forwards"></a>
+
+## Add port forwards to virtual machine
+
+```python
 gw.portforwards.add(name='myforward1', source=(public_net.ip.address, 8080), target=('192.168.103.2', 8080))
 gw.portforwards.add(name='myforward2', source=(public_net.ip.address, 7122), target=('192.168.103.2', 22))
 ```
@@ -323,19 +385,15 @@ We will deploy the virtual machine later, after having added a disk:
 #vm.deploy()
 ```
 
+<a id="create-zdb"></a>
 
-## Zero-DB
+## Create Zero-DB
 
 As a next step we will add a disk to the virtual machine. This requires us to first create a Zero-DB.
 
 In order to list the physical disks on the Zero-OS node:
 ```python
 zos_node.disks.list()
-```
-
-First shutdown the VM - or do this earlier:
-```python
-vm.shutdown()
 ```
 
 Create a Zero-DB:
@@ -369,7 +427,9 @@ nft = zos_node.client.nft
 nft.list()
 ```
 
-## Disk
+<a id="create-disk"></a>
+
+## Create and attach a disk
 
 Create (define) a disk:
 ```python
@@ -383,15 +443,32 @@ Deploy the disk, will create namespace on zdb
 zdisk.deploy()
 ```
 
+In case you already deployed the virtual machine, you will need to shutdown it before attaching the disk:
+```python
+vm.shutdown()
+```
+
 Attach the disk:
 ```python
 vm.disks.add(name_or_disk=zdisk)
 vm.deploy()
 ```
 
-## Start a HTTP server
+<a id="http-access"></a>
 
-SSH into machine:
+## Test HTTP access
+
+Make sure the previously created SSH key is loaded by the SSH agent:
+```bash
+ssh-add ~/.ssh/my_sshkey 
+```
+
+SSH into the virtual machine:
+```bash
+ssh <> -p7122
+```
+
+Start a HTTP server on the virtual machine:
 ```bash
 python3 -m http.server 8080
 ```
@@ -453,8 +530,4 @@ ubuntu_vm = node.primitives.from_json(type="vm", json=ubuntu_json_string)
 
 # Deleting the vm 
 node.primitives.drop_vm("my-little-ubuntu-vm")
-
-
 ```
-
-
