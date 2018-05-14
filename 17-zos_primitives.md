@@ -190,7 +190,7 @@ To check the flist version that was used:
 zos_node.client.info.version()
 ```
 
-<a id="authenticate-sshkey"></a>
+<a id="authorize-sshkey"></a>
 
 ## Authorize SSH key in Zero-OS node
 
