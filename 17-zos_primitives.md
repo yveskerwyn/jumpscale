@@ -9,7 +9,7 @@
 - [Create the Zero-OS gateway](#create-gw)
 - [Create a virtual machine](#create-vm)
 - [Authorize SSH key in virtual machine](#authorize-sshkey2)
-- [Assign a IP address to the virtual machine](#assign-ip)
+- [Assign an IP address to the virtual machine](#assign-ip)
 - [Configure reverse proxy](#reverse-proxy)
 - [Add port forwards to virtual machine](#port-forwards)
 - [Create Zero-DB](#create-zdb)
@@ -149,7 +149,7 @@ external_gw_ip_address = zos_vm.model['interfaces'][1]['params'].split()[0].rspl
 
 Check the existing configuration instances:
 ```python
-j.clients.zero_os.list()
+j.clients.zos.list()
 ```
 
 Name of the Zero-OS configuration instance:
@@ -240,7 +240,7 @@ gw = zos_node.primitives.create_gateway(name=gw_name)
 
 > At this point the actual container is not yet created, this only happens later when executing `gw_container.deploy()`
 
-Define a network with name 'public' using a vlan:
+Define a network with name `public` using a VLAN:
 ```python
 vlan_tag = 0
 public_network_name = 'public'
@@ -344,7 +344,7 @@ vm.configs.add(name='mysshkey', path='/root/.ssh/authorized_keys', content=sshke
 
 <a id="assign-ip"></a>
 
-## Assign a IP address to the virtual machine
+## Assign an IP address to the virtual machine
 
 ```python
 host = private_net.hosts.add(host=vm, ipaddress='192.168.103.2')
