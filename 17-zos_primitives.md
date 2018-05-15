@@ -13,24 +13,19 @@
 - [Configure reverse proxy](#reverse-proxy)
 - [Add port forwards to virtual machine](#port-forwards)
 - [Create Zero-DB](#create-zdb)
-- [Create and attach a disk](#create-disk)
+- [Create and attach a virtual disk](#create-vdisk)
 - [Test HTTP access](#http-access)
+- [Create a private network using ZeroTier instead of VXLAN](#private-zt)
 
 
 <a id="create-zt-network"></a>
 
 ## Create the ZeroTier network
 
-```python
-zt_network_id = '0' # if no ZeroTier
-zt_network_id = '17d709436c5bc232'
-local_prefab = j.tools.prefab.local
-```
-
 Install ZT if needed:
 ```python
-local_prefab.network.zerotier.install()
-local_prefab.network.zerotier.start()
+j.tools.prefab.local.network.zerotier.install()
+j.tools.prefab.local.network.zerotier.start()
 ```
 
 Set the name of the ZeroTier configuration instance for your ZeroTier account:
@@ -43,7 +38,7 @@ In case you have already created a configuration instance for your ZeroTier acco
 zt_client = j.clients.zerotier.get(instance=zt_config_instance_name)
 ```
 
-Optionally, in order to delete the existing ZeroTier configuration instance:
+Optionally, in order to delete your existing ZeroTier configuration instance:
 ```python
 j.clients.zerotier.delete(instance=zt_config_instance_name)
 ```
@@ -63,33 +58,26 @@ zt_client.networks_list()
 Set the name of the ZeroTier network you want to use as your management network:
 Create the network:
 ```python
-zt_network_name = 'my_zt_network'
+zt_admin_network_name = 'admin_network'
 ```
 
 If this ZeroTier network was already created before, get it using the network id:
 ```python
-zt_network_id = '9f77fc393efab57c'
-zt_network = zt_client.network_get(network_id=zt_network_id)
+zt_admin_network_id = '9f77fc393eb910bc'
+zt_admin_network = zt_client.network_get(network_id=zt_admin_network_id)
 ```
 
 If not created yet the network, create it:
 ```python
-zt_network = zt_client.network_create(public=False, name=zt_network_name, routes=zt_routes)
+zt_admin_network = zt_client.network_create(public=False, name=zt_admin_network_name, auto_assign=True)
+zt_admin_network_id = zt_admin_network.id
 ```
 
-Create the ZeroTier network using you ZeroTier client:
+Since the current ZeroTier client doesn't allow you to set/update the auto-assign range you'll have to do it manually through https://my.zerotier.com, and check the result from JumpScale:
 ```python
-zt_routes = [{'target': '10.147.18.0/24', 'via': None}]
-
-zt_network = zt_client.network_create(public=False, name=zt_network_name, routes=zt_routes)
-zt_network_id = zt_network.id
+zt_admin_network = zt_client.network_get(network_id=zt_admin_network_id)
+zt_admin_network.config['ipAssignmentPools']
 ```
-
-Since the current ZeroTier client doesn't allow you to set the auto-assign range you'll have to do it manually through https://my.zerotier.com, and check the result from JumpScale:
-```python 
-zt_network.config['ipAssignmentPools']
-```
-
 
 <a id="join-zt-network"></a>
 
@@ -97,16 +85,14 @@ zt_network.config['ipAssignmentPools']
 
 Join:
 ```python
-j.tools.prefab.local.network.zerotier.network_join(network_id=zt_network_id)
+j.tools.prefab.local.network.zerotier.network_join(network_id=zt_admin_network_id)
 ```
 
 Authorize the join request:
 ```python
 zt_machine_addr = j.tools.prefab.local.network.zerotier.get_zerotier_machine_address()
 
-#zt_network = zt_client.network_get(network_id=zt_network_id)
-
-zos_member = zt_network.member_get(address=zt_machine_addr)
+zos_member = zt_admin_network.member_get(address=zt_machine_addr)
 zos_member.authorize()
 ```
 
@@ -143,9 +129,10 @@ Get to your OpenvCloud account:
 ovc_account_name = 'Account_of_Yves'
 ovc_account = ovc_client.account_get(name=ovc_account_name, create=False)
 ```
+
 Create/get a cloud space (virtual datacenter)
 ```python
-vdc_name = 'zero-space'
+vdc_name = 'my-zero-space'
 cloud_space = ovc_account.space_get(name=vdc_name, create=True)
 ```
 
@@ -156,40 +143,36 @@ cloudspace_public_ip_address = cloud_space.ipaddr_pub
 
 Boot a VM with Zero-OS in the cloud space:
 ```python
-vm_name = 'zero-os-demo'
+vm_name = 'my-zos-vm'
 iyo_organization = 'zos-training-org'
 zos_kernel_params = ['organization={}'.format(iyo_organization), 'development']
 zos_branch = 'development'
 
-ipxe_url = 'ipxe: https://bootstrap.gig.tech/ipxe/{}/{}/'.format(zos_branch, zt_network_id) + '%20'.join(zos_kernel_params)
+ipxe_url = 'ipxe: https://bootstrap.gig.tech/ipxe/{}/{}/'.format(zos_branch, zt_admin_network_id) + '%20'.join(zos_kernel_params)
 
 zos_vm = cloud_space.machine_create(name=vm_name, memsize=8, disksize=10, datadisks=[50], image='IPXE Boot', authorize_ssh=False, userdata=ipxe_url)
 ```
 
 If you specified a ZeroTier network, authorize the join request from the Zero-OS node:
 ```python
-zos_member = zt_network.member_get(public_ip=cloudspace_public_ip_address)
+zos_member = zt_admin_network.member_get(public_ip=cloudspace_public_ip_address)
 zos_member.authorize()
 ```
 
-In case you don't use a ZeroTier (`zt_network_id = 0`), you need a port forward for the Redis port (6379) and optionally for the port (9900) the Open vSwitch container will listen too:
-```python
-zos_vm.portforward_create(publicport=6379, localport=6379)
-#zos_vm.portforward_create(publicport=9900, localport=9900)
-```
-
-Attach an external network directly to the VM, making it available for the gateway container:
+Attach an external network directly to the VM, we will need it for gateway later:
 ```python 
 zos_vm.externalnetwork_attach()
 ```
 
-We need the IP and MAC address of Zero-OS node on the external network interface, for connecting to the gataway:
+We need the IP and MAC address of Zero-OS node on the OpenvCloud external network interface, for connecting to the gateway:
 ```python
 external_network_ip_address = zos_vm.model['interfaces'][1]['ipAddress']
 external_network_mac_address = zos_vm.model['interfaces'][1]['macAddress']
 ```
 
-Also get the IP address of the internet gateway:
+> The above might fail if executed immediately after attaching the external network, in that case just wait a while and try again. 
+
+Also get the IP address of the Internet gateway:
 ```python
 external_gw_ip_address = zos_vm.model['interfaces'][1]['params'].split()[0].rsplit(':')[1]
 ```
@@ -208,12 +191,12 @@ Name of the Zero-OS configuration instance:
 zos_instance_name = vm_name
 ```
 
-For an existing connection:
+If you already have a config instance, get the client:
 ```python
-zos_client = j.clients.zos.get(instance=zos_instance_name)
+zos_client = j.clients.zos.get(instance=zos_instance_name, interactive=False)
 ```
 
-For a new connection, first get your JWT:
+If not, first get your JWT:
 ```python
 iyo_client = j.clients.itsyouonline.get(instance='main')
 memberof_scope = 'user:memberof:{}'.format(iyo_organization)
@@ -222,10 +205,7 @@ jwt = iyo_client.jwt_get(scope=memberof_scope, refreshable=True)
 
 Create a new connection:
 ```python
-if zt_network_id == 0:
-    node_address = cloudspace_public_ip_address
-else:
-    node_address = zos_member.private_ip
+node_address = zos_member.private_ip
 
 zos_cfg = {"host": node_address, "port": 6379, "password_": jwt}
 zos_client = j.clients.zos.get(instance=zos_instance_name, data=zos_cfg)
@@ -258,9 +238,21 @@ sshkey_client = j.clients.sshkey.key_generate(path=sshkey_path)
 
  Authorize the new SSH key:
 ```python
-#zos_node.client.bash('wget ssh.maxux.net/yveskerwyn -O - | ash').get()
-zos_node.client.bash('echo "{}" >> /root/.ssh/authorized_keys'.format(key)).get()
+pubkey = sshkey_client.pubkey
+zos_node.client.bash('echo "{}" >> /root/.ssh/authorized_keys'.format(pubkey)).get()
+```
+
+Open port 22 for SSH Access:
+```python
 zos_node.client.nft.open_port(22)
+```
+
+> The above will only allow SSH access on port 22 via the ZeroTier admin network.
+
+In order to test SSH access, make sure to the authorized SSH key is loaded by ssh-agent:
+```
+ssh-add ~/.ssh./my_sshkey
+ssh <zos_member.private_ip>
 ```
 
 <a id="ovs-container"></a>
@@ -321,7 +313,7 @@ Deploy the gateway to the Zero-OS node
 gw.deploy()
 ```
 
-There is no list gateways, since there is no state kept about this in the node, that's the job of the remote 0-robot, you simply need to now the container - once deployed:
+There is no API to list the gateways, since there is no state kept about this in the node, that's the job of the remote 0-robot, you simply need to now the container - once deployed:
 ```python
 zos_node.containers.list()
 gw_container = zos_node.containers.get(name=gw_name)
@@ -337,7 +329,7 @@ Serialize the gateway configuration to JSON:
 gw_json_string = gw.to_json()    
 ```
 
-This allows you to define a Gateway sal from JSON:                              
+This allows you to define a Gateway SAL from JSON:                              
 ```python
 gw = zos_node.primitives.from_json(type_="gateway", json=gw_json_string)
 ```
@@ -373,7 +365,7 @@ gw_container.stop()
 
 Create (define) a new Ubuntu virtual machine:
 ```python
-vm_name = 'myvm'
+vm_name = 'vm'
 #vm = zos_node.primitives.create_virtual_machine(name=vm_name, type_='ubuntu:latest')
 #vm.flist = 'https://hub.gig.tech/gig-bootable/ubuntu:16.04.flist'
 vm = zos_node.primitives.create_virtual_machine(name=vm_name, type_='ubuntu:lts')
@@ -407,16 +399,17 @@ host = private_net.hosts.add(host=vm, ipaddress='192.168.103.2')
 ## Configure reverse proxy
 
 ```python
-gw.httpproxies.add(name='myproxy', host=public_net.ip.address, destinations=['http://192.168.103.2:8080'], types=['http'])
+gw.httpproxies.add(name='my_proxy', host=public_net.ip.address, destinations=['http://192.168.103.2:8080'], types=['http'])
 ```
 
 <a id="port-forwards"></a>
 
 ## Add port forwards to virtual machine
 
+In order to make the VM accessible from the external network on HTTP en SSH, add following port forwards:
 ```python
-gw.portforwards.add(name='myforward1', source=(public_net.ip.address, 8080), target=('192.168.103.2', 8080))
-gw.portforwards.add(name='myforward2', source=(public_net.ip.address, 7122), target=('192.168.103.2', 22))
+gw.portforwards.add(name='my_forward1', source=(public_net.ip.address, 8080), target=('192.168.103.2', 8080))
+gw.portforwards.add(name='my_forward2', source=(public_net.ip.address, 7122), target=('192.168.103.2', 22))
 ```
 
 In case you need to remove this:
@@ -449,7 +442,7 @@ zos_node.disks.list()
 
 Create a Zero-DB:
 ```python
-zdb_name = 'myzdb'
+zdb_name = 'zdb'
 zdb_dir = '/var/cache/zdb'
 zos_client.filesystem.mkdir(path=zdb_dir)
 zdb = zos_node.primitives.create_zerodb(name=zdb_name, path=zdb_dir)
@@ -461,7 +454,7 @@ zos_node.primitives.drop_zerodb(name=zdb_name)
 zdb_container = zos_node.containers.get(name=zdb_name).stop()
 ```
 
-NOT NEEDED - is done automatically when deploying the ZDB
+NOT NEEDED - is done automatically when deploying the your first virtual isk:
 ```python
 nft = zos_node.client.nft
 nft.open_port(9900)
@@ -472,26 +465,20 @@ Deploy the new namespace to the zdb
 zdb.deploy()
 ```
 
-Check again the nft, 9900 will be added, next to 6379 (Redis) en 6600 (Node Robot):
-```python
-nft = zos_node.client.nft
-nft.list()
-```
+<a id="create-vdisk"></a>
 
-<a id="create-disk"></a>
-
-## Create and attach a disk
+## Create and attach a virtual disk
 
 Create (define) a disk:
 ```python
-zdisk_name = 'mydisk'
-zdisk = zos_node.primitives.create_disk(name=zdisk_name, zdb=zdb, mountpoint='/mnt', filesystem='btrfs') 
+vdisk_name = 'vdisk'
+vdisk = zos_node.primitives.create_disk(name=vdisk_name, zdb=zdb, mountpoint='/mnt', filesystem='btrfs') 
 #zdisk.mountpoint = '/mnt'
 ```
 
 Deploy the disk, will create namespace on zdb
 ```python
-zdisk.deploy()
+vdisk.deploy()
 ```
 
 In case you already deployed the virtual machine, you will need to shutdown it before attaching the disk:
@@ -501,8 +488,13 @@ vm.shutdown()
 
 Attach the disk:
 ```python
-vm.disks.add(name_or_disk=zdisk)
+vm.disks.add(name_or_disk=vdisk)
 vm.deploy()
+```
+
+check the result:
+```python
+zos_node.client.bash('virsh list').get()
 ```
 
 <a id="http-access"></a>
@@ -516,7 +508,7 @@ ssh-add ~/.ssh/my_sshkey
 
 SSH into the virtual machine:
 ```bash
-ssh <> -p7122
+ssh <external_network_ip_address> -p7122
 ```
 
 Start a HTTP server on the virtual machine:
@@ -524,32 +516,18 @@ Start a HTTP server on the virtual machine:
 python3 -m http.server 8080
 ```
 
-## Use a ZeroTier VXLAN
+<a id="private-zt"></a>
+## Create a private network using ZeroTier instead of VXLAN
 
 Create/get a new ZeroTier network:
 ```python
-zt_vxlan_name = 'my_vxlan_zt'
-zt_routes = [{'target': '10.147.18.0/24', 'via': None}]
+zt_app_network_name = 'app_network'
 
-zt_vxlan_network = zt_client.network_create(public=False, name=zt_vxlan_name, routes=zt_routes)
-zt_vxlan_network_id = zt_vxlan_network.id
+zt_app_network = zt_client.network_create(public=False, name=zt_app_network_name , auto_assign=True)
+zt_app_network_id = zt_app_network.id
 ```
 
 Manually select a auto-assign range.
-
-Drop the existing ZDB:
-```python
-zos_node.primitives.drop_zerodb(name=zdb_name)
-```
-
-Deploy a new one:
-```python
-zdb_name2 = 'myzdb2'
-zdb_dir2 = '/var/cache/zdb2'
-zos_client.filesystem.mkdir(path=zdb_dir2)
-zdb2 = zos_node.primitives.create_zerodb(name=zdb_name2, path=zdb_dir2)
-zdb2.deploy()
-```
 
 Drop the existing GW:
 ```python
@@ -559,10 +537,10 @@ zos_node.primitives.drop_gateway(name=gw_name)
 Create a new one:
 ```python
 gw2_name = 'my-gw2'
-gw2 = zos_node.primitives.create_gateway(name=gw_name2)
+gw2 = zos_node.primitives.create_gateway(name=gw2_name)
 ```
 
-Define the public leg:
+Define the public leg, same as before:
 ```python
 vlan_tag = 0
 public_network_name = 'public'
@@ -574,38 +552,77 @@ public_net.hwaddr = external_network_mac_address
 
 Define the ZeroTier private network:
 ```python
-private_network_name = 'private'
-private_net = gw2.networks.add(name=private_network_name, type_='zerotier', networkid=zt_network_id)
+private_network_name = 'zt'
+private_net = gw2.networks.add(name=zt_app_network_name, type_='zerotier', networkid=zt_app_network_id)
 private_net.hosts.nameservers = ['1.1.1.1']
 ```
 
 Define a new VM:
 ```python
-vm_name = 'myvm2'
-vm2 = zos_node.primitives.create_virtual_machine(name=vm_name, type_='ubuntu:lts')
+vm2_name = 'vm2'
+vm2 = zos_node.primitives.create_virtual_machine(name=vm2_name, type_='ubuntu:lts')
 
 vm2.configs.add(name='mysshkey', path='/root/.ssh/authorized_keys', content=sshkey_client.pubkey)
 ```
 
 Deploy a new disk:
 ```python
-zdisk_name2 = 'mydisk2'
-zdisk2 = zos_node.primitives.create_disk(name=zdisk_name2, zdb=zdb, mountpoint='/mnt', filesystem='btrfs')
-zdisk2.deploy()
+vdisk2_name = 'vdisk2'
+vdisk2 = zos_node.primitives.create_disk(name=vdisk2_name, zdb=zdb, mountpoint='/mnt', filesystem='btrfs')
+vdisk2.deploy()
 ```
-
 
 Deploy:
 ```python
 gw2.deploy()
 ```
 
-At this point the gateway will have send a join request for the sepecified ZeroTier network, authorize it:
+At this point the gateway will have send a join request for the specified ZeroTier network, authorize it:
 ```python
-zt_address = zt_vxlan_network.members_list()[0].address
-zos_member = zt_vxlan_network.member_get(address=zt_address)
+zt_app_network_address = zt_app_network.members_list()[0].address
+zos_member = zt_app_network.member_get(address=zt_app_network_address)
 zos_member.authorize()
 ```
+
+Deploy the VM:
+```python
+vm2.deploy()
+```
+
+Shutdown:
+```python
+vm2.shutdown()
+```
+
+Add the machine to the private network:
+```python
+vm2.nics.add_zerotier(network=zt_app_network)
+```
+
+Deploy the VM again
+```python
+vm2.deploy()
+```
+
+The VM will automatically get authorized into the ZeroTier application network.
+
+Get the private IP address of the newly added VM:
+```python
+zos_member = zt_app_network.member_get(name=vm2_name)
+zt_addr2 = zos_member.private_ip
+```
+
+Configure port forwarding:
+```python
+gw2.portforwards.add(name='my_forward1', source=(public_net.ip.address, 8080), target=(zt_addr2, 8080))
+gw2.portforwards.add(name='my_forward2', source=(public_net.ip.address, 7122), target=(zt_addr2, 22))
+```
+
+Redeploy the gateway:
+```python
+gw2.deploy()
+```
+
 
 ## Misc
 
