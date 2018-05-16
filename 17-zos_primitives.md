@@ -1,5 +1,11 @@
 # Getting started with the Zero-OS Primitives
 
+## Demo setup
+
+![](../images/zos_primitives_demo_setup1.png)
+
+## Demo steps
+
 - [Create the ZeroTier network](#create-zt-network)
 - [Join the ZeroTier network](#join-zt-network)
 - [Create a VDC on OpenvCloud](#create-vdc)
@@ -557,6 +563,10 @@ python3 -m http.server 8080
 
 <a id="private-zt"></a>
 ## Create a private network using ZeroTier instead of VXLAN
+
+For this demo we will use a ZeroTier network as the private network, instead of the VXLAN network. 
+
+![](../images/zos_primitives_demo_setup2.png)
 
 Create/get a new ZeroTier network:
 ```python
