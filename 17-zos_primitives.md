@@ -2,7 +2,7 @@
 
 ## Demo setup
 
-![](../images/zos_primitives_demo_setup1.png)
+![](images/zos_primitives_demo_setup1.png)
 
 ## Demo steps
 
@@ -566,7 +566,7 @@ python3 -m http.server 8080
 
 For this demo we will use a ZeroTier network as the private network, instead of the VXLAN network. 
 
-![](../images/zos_primitives_demo_setup2.png)
+![](images/zos_primitives_demo_setup2.png)
 
 Create/get a new ZeroTier network:
 ```python
