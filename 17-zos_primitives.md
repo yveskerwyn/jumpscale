@@ -28,7 +28,12 @@ j.tools.prefab.local.network.zerotier.install()
 j.tools.prefab.local.network.zerotier.start()
 ```
 
-Set the name of the ZeroTier configuration instance for your ZeroTier account:
+List the configuration instances for your ZeroTier accounts:
+```python
+j.clients.zerotier.list()
+```
+
+Set the name of the ZeroTier configuration instance for the ZeroTier account you want to create or use:
 ```python
 zt_config_instance_name = 'my_zt_account'
 ```
@@ -145,7 +150,7 @@ Boot a VM with Zero-OS in the cloud space:
 ```python
 vm_name = 'my-zos-vm'
 iyo_organization = 'zos-training-org'
-zos_kernel_params = ['organization={}'.format(iyo_organization), 'development']
+zos_kernel_params = ['organization={}'.format(iyo_organization), 'development', 'console=ttyS1,115200']
 zos_branch = 'development'
 
 ipxe_url = 'ipxe: https://bootstrap.gig.tech/ipxe/{}/{}/'.format(zos_branch, zt_admin_network_id) + '%20'.join(zos_kernel_params)
@@ -191,7 +196,12 @@ Name of the Zero-OS configuration instance:
 zos_instance_name = vm_name
 ```
 
-If you already have a config instance, get the client:
+Optionally, you might want to delete the existing instance with the same name:
+```python
+j.clients.zos.delete(instance=zos_instance_name)
+```
+
+If you already have an updated config instance, get the client:
 ```python
 zos_client = j.clients.zos.get(instance=zos_instance_name, interactive=False)
 ```
@@ -206,10 +216,10 @@ jwt = iyo_client.jwt_get(scope=memberof_scope, refreshable=True)
 Create a new connection:
 ```python
 node_address = zos_member.private_ip
-
 zos_cfg = {"host": node_address, "port": 6379, "password_": jwt}
 zos_client = j.clients.zos.get(instance=zos_instance_name, data=zos_cfg)
 ```
+
 Get the node interface and list the containers:
 ```python
 zos_node = j.clients.zos.sal.get_node(instance=zos_instance_name)
@@ -227,13 +237,20 @@ zos_node.client.info.version()
 
 Since the machine was started development mode, you can SSH it.
 
-First create a new SSH key, using the `sshkey` client:
+Set the name and path of the SSH key you want to authorize:
 ```python
 sshkey_name = 'my_sshkey'
 sshkey_path = "/root/.ssh/{}".format(sshkey_name)
+```
 
+If this SSH key already exists, get it using the `sshkey` client:
+```python
+sshkey_client = j.clients.sshkey.get(sshkey_name)
+``` 
+
+If not, create it: 
+```python
 sshkey_client = j.clients.sshkey.key_generate(path=sshkey_path)
-#sshkey_client = j.clients.sshkey.get(sshkey_name)
 ```
 
  Authorize the new SSH key:
@@ -408,8 +425,8 @@ gw.httpproxies.add(name='my_proxy', host=public_net.ip.address, destinations=['h
 
 In order to make the VM accessible from the external network on HTTP en SSH, add following port forwards:
 ```python
-gw.portforwards.add(name='my_forward1', source=(public_net.ip.address, 8080), target=('192.168.103.2', 8080))
-gw.portforwards.add(name='my_forward2', source=(public_net.ip.address, 7122), target=('192.168.103.2', 22))
+gw.portforwards.add(name='my_forward1', source=(public_net.name, 8080), target=('192.168.103.2', 8080))
+gw.portforwards.add(name='my_forward2', source=(public_net.name, 7122), target=('192.168.103.2', 22))
 ```
 
 In case you need to remove this:
@@ -614,8 +631,8 @@ zt_addr2 = zos_member.private_ip
 
 Configure port forwarding:
 ```python
-gw2.portforwards.add(name='my_forward1', source=(public_net.ip.address, 8080), target=(zt_addr2, 8080))
-gw2.portforwards.add(name='my_forward2', source=(public_net.ip.address, 7122), target=(zt_addr2, 22))
+gw2.portforwards.add(name='my_forward1', source=(public_net.name, 8080), target=(zt_addr2, 8080))
+gw2.portforwards.add(name='my_forward2', source=(public_net.name, 7122), target=(zt_addr2, 22))
 ```
 
 Redeploy the gateway:
