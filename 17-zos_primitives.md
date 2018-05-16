@@ -2,7 +2,10 @@
 
 - [Create the ZeroTier network](#create-zt-network)
 - [Join the ZeroTier network](#join-zt-network)
+- [Create a VDC on OpenvCloud](#create-vdc)
 - [Boot the Zero-OS node on OpenvCloud](#boot-zos)
+- [Authorize ZeroTier join request from node](#authorize-join)
+- [Attach OVC public network to virtual machine](#attach-network)
 - [Connect using the JumpScale client for Zero-OS](#zos-client)
 - [Authorize SSH key in Zero-OS node](#authorize-sshkey)
 - [Create an Open vSwitch (OVS) container](#ovs-container)
@@ -101,9 +104,9 @@ zos_member = zt_admin_network.member_get(address=zt_machine_addr)
 zos_member.authorize()
 ```
 
-<a id="boot-zos"></a>
+<a id="create-vdc"></a>
 
-## Boot the Zero-OS node on OpenvCloud
+## Create a VDC on OpenvCloud
 
 List all your OpenvCloud configuration clients:
 ```python
@@ -146,6 +149,10 @@ Get the public IP address of the cloud space:
 cloudspace_public_ip_address = cloud_space.ipaddr_pub
 ```
 
+<a id="boot-zos"></a>
+
+## Boot the Zero-OS node on OpenvCloud
+
 Boot a VM with Zero-OS in the cloud space:
 ```python
 vm_name = 'my-zos-vm'
@@ -158,11 +165,19 @@ ipxe_url = 'ipxe: https://bootstrap.gig.tech/ipxe/{}/{}/'.format(zos_branch, zt_
 zos_vm = cloud_space.machine_create(name=vm_name, memsize=8, disksize=10, datadisks=[50], image='IPXE Boot', authorize_ssh=False, userdata=ipxe_url)
 ```
 
-If you specified a ZeroTier network, authorize the join request from the Zero-OS node:
+<a id="authorize-join"></a>
+
+## Authorize ZeroTier join request from node
+
+In order to authorize the join request from the Zero-OS node:
 ```python
 zos_member = zt_admin_network.member_get(public_ip=cloudspace_public_ip_address)
 zos_member.authorize()
 ```
+
+<a id="attach-network"></a>
+
+## Attach public network to virtual machine
 
 Attach an external network directly to the VM, we will need it for gateway later:
 ```python 
@@ -380,12 +395,15 @@ gw_container.stop()
 
 > Make sure to take one of the gig-booteable flists: https://hub.gig.tech/gig-bootable
 
+
+
 Create (define) a new Ubuntu virtual machine:
 ```python
 vm_name = 'vm'
+vm = zos_node.primitives.create_virtual_machine(name=vm_name, type_='ubuntu:lts')
+
 #vm = zos_node.primitives.create_virtual_machine(name=vm_name, type_='ubuntu:latest')
 #vm.flist = 'https://hub.gig.tech/gig-bootable/ubuntu:16.04.flist'
-vm = zos_node.primitives.create_virtual_machine(name=vm_name, type_='ubuntu:lts')
 
 #zos_node.primitives.drop_virtual_machine(name=vm_name)
 
@@ -468,6 +486,10 @@ zdb = zos_node.primitives.create_zerodb(name=zdb_name, path=zdb_dir)
 In order to delete the Zero-DB do one of the following:
 ```python
 zos_node.primitives.drop_zerodb(name=zdb_name)
+```
+
+Or:
+```python
 zdb_container = zos_node.containers.get(name=zdb_name).stop()
 ```
 
