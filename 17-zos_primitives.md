@@ -83,13 +83,15 @@ zt_admin_network = zt_client.network_get(network_id=zt_admin_network_id)
 
 If not created yet the network, create it:
 ```python
-zt_admin_network = zt_client.network_create(public=False, name=zt_admin_network_name, auto_assign=True)
+auto_assign_range = '10.147.19.0/24'
+zt_admin_network = zt_client.network_create(public=False, name=zt_admin_network_name, auto_assign=True, subnet=auto_assign_range)
 zt_admin_network_id = zt_admin_network.id
 ```
 
-Since the current ZeroTier client doesn't allow you to set/update the auto-assign range you'll have to do it manually through https://my.zerotier.com, and check the result from JumpScale:
+Check the result:
 ```python
 zt_admin_network = zt_client.network_get(network_id=zt_admin_network_id)
+zt_admin_network.config
 zt_admin_network.config['ipAssignmentPools']
 ```
 
