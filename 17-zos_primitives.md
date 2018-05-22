@@ -574,7 +574,9 @@ Create/get a new ZeroTier network:
 ```python
 zt_app_network_name = 'app_network'
 
-zt_app_network = zt_client.network_create(public=False, name=zt_app_network_name , auto_assign=True)
+auto_assign_range2 = '10.147.20.0/24'
+
+zt_app_network = zt_client.network_create(public=False, name=zt_app_network_name , auto_assign=True, subnet=auto_assign_range2)
 zt_app_network_id = zt_app_network.id
 ```
 
