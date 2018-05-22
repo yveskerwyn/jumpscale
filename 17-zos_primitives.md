@@ -640,6 +640,11 @@ zos_member = zt_app_network.member_get(address=zt_app_network_address)
 zos_member.authorize()
 ```
 
+Instead of explicitly authorizing the join request you can also have this done by the gateway by specifying the ZeroTier client:
+```python
+ zt_app_network.client_name = zt_config_instance_name
+```
+
 Deploy the VM:
 ```python
 vm2.deploy()
