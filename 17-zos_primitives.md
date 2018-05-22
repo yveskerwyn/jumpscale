@@ -173,6 +173,9 @@ ipxe_url = 'ipxe: https://bootstrap.gig.tech/ipxe/{}/{}/'.format(zos_branch, zt_
 zos_vm = cloud_space.machine_create(name=vm_name, memsize=8, disksize=10, datadisks=[50], image='IPXE Boot', authorize_ssh=False, userdata=ipxe_url)
 ```
 
+Alternatively you can also boot a machine on Packet.net, as documented here below in [Boot a Zero-OS node on Packet.net](#packet-boot). Using this option will implicitly create and return a Zero-OS client.
+
+
 <a id="authorize-join"></a>
 
 ## Authorize ZeroTier join request from node
@@ -187,7 +190,7 @@ zos_member.authorize()
 
 ## Attach public network to virtual machine
 
-Attach an external network directly to the VM, we will need it for gateway later:
+Attach an external network directly to the virtual machine, we will need it for gateway later:
 ```python 
 zos_vm.externalnetwork_attach()
 ```
@@ -583,8 +586,6 @@ zt_app_network = zt_client.network_create(public=False, name=zt_app_network_name
 zt_app_network_id = zt_app_network.id
 ```
 
-Manually select a auto-assign range.
-
 Drop the existing GW:
 ```python
 zos_node.primitives.drop_gateway(name=gw_name)
@@ -608,7 +609,6 @@ public_net.hwaddr = external_network_mac_address
 
 Define the ZeroTier private network:
 ```python
-private_network_name = 'zt'
 private_net = gw2.networks.add(name=zt_app_network_name, type_='zerotier', networkid=zt_app_network_id)
 private_net.hosts.nameservers = ['1.1.1.1']
 ```
@@ -642,7 +642,7 @@ zos_member.authorize()
 
 Instead of explicitly authorizing the join request you can also have this done by the gateway by specifying the ZeroTier client:
 ```python
- zt_app_network.client_name = zt_config_instance_name
+zt_app_network.client_name = zt_config_instance_name
 ```
 
 Deploy the VM:
@@ -650,17 +650,18 @@ Deploy the VM:
 vm2.deploy()
 ```
 
-Shutdown:
-```python
-vm2.shutdown()
-```
-
-Add the machine to the private network:
+At this point the virtual machine is running, but not yet joined into the ZeroTier network. In order to add the ZeroTier network we need to execute the following:
 ```python
 vm2.nics.add_zerotier(network=zt_app_network)
 ```
 
-Deploy the VM again
+This will however not work while the machine is running, so first shut it down and retry the above:
+```python
+vm2.shutdown()
+vm2.nics.add_zerotier(network=zt_app_network)
+```
+
+Redeploy the virtual machine:
 ```python
 vm2.deploy()
 ```
@@ -684,6 +685,144 @@ Redeploy the gateway:
 gw2.deploy()
 ```
 
+<a id = 'packet-client'></a>
+
+## Get a Packet.net client
+
+In what follows we will boot a Zero-OS on a physical machine one Packet.net - instead of using the virtual machine running on OpenvCloud as documented above.
+
+Check for existing Packet.net clients:
+```python
+j.clients.packetnet.list()
+```
+
+Set the name of the Packet.net configuration instance you want to use/create:
+```python
+packet_cfg_instance_name = 'my_packet_account'
+```
+
+In case you already created the Packet.net client previously, get it:
+```python
+packet_client = j.clients.packetnet.get(instance=packet_cfg_instance_name, create=False, interactive=False)
+```
+
+If not, create the client:
+```python
+packet_api_key = '...'
+packet_project_name = 'GIG Engineering'
+packet_cfg = dict(auth_token_=packet_api_key, project_name=packet_project_name)
+packet_client = j.clients.packetnet.get(instance=packet_cfg_instance_name, data=packet_cfg, interactive=False)
+```
+
+
+<a id = 'packet-boot'></a>
+
+## Boot a Zero-OS node on Packet.net
+
+Boot a VM with Zero-OS in the cloud space:
+```python
+iyo_organization = 'zos-training-org'
+zos_kernel_params = ['organization={}'.format(iyo_organization), 'development', 'console=ttyS1,115200']
+zos_branch = 'v1.2.2'
+
+zos_hostname = 'my-zos-vm'
+zt_token = '...'
+zos_client, node, zt_ip_address = packet_client.startZeroOS(hostname=zos_hostname, plan='t1.small', facility='ams1', zerotierId=zt_admin_network_id, zerotierAPI=zt_token, wait=True, remove=False, params=zos_kernel_params, branch=zos_branch)
+```
+
+`packet_client.startZeroOS()` calls `packet_client.startDevice()`, which you can alternalivy use if you prefer to pass the iPXE URL and authorize the join request explicitetly:
+```python
+ipxe_url = 'ipxe: https://bootstrap.gig.tech/ipxe/{}/{}/'.format(zos_branch, zt_admin_network_id) + '%20'.join(zos_kernel_params)
+node = packet_client.startDevice(hostname=zos_hostname, plan='x1.small', facility='ams1', os='Custom iPXE', ipxeUrl=ipxe_url, wait=True, remove=False, sshkey=sshkey_name)
+```
+
+Check to output from Zero-OS console:
+```bash
+ssh 5c37a327-65fd-40fc-8998-4e0c07bfdd24@sos.ams1.packet.net
+```
+
+Using `packet_client.startZeroOS()` also implicitly creates and returns Zero-OS client, of which the configuration instance name is set to ZeroTier IP address:
+```python
+j.clients.zos.list()
+#zos_instance_name = zt_ip_address
+#zos_client = j.clients.zos.get(instance=zos_instance_name, create=False, interactive=False)
+```
+
+Checking the configuration instance data will reveal (bug) that the JWT was not set correctly:
+```python
+zos_client.config.data['password_']
+```
+
+In order to set it:
+```python
+iyo_client = j.clients.itsyouonline.get(instance='main')
+memberof_scope = 'user:memberof:{}'.format(iyo_organization)
+jwt = iyo_client.jwt_get(scope=memberof_scope, refreshable=True)
+zos_client.config.data_set(key='password_', val=jwt)
+```
+
+In order to access the Zero-OS node interface, and list all containers:
+```python
+zos_node = j.clients.zos.sal.get_node(instance=zos_client.instance)
+zos_node.containers.list()
+```
+
+Authorize SSH access:
+```python
+sshkey_name = 'my_sshkey'
+sshkey_path = "/root/.ssh/{}".format(sshkey_name)
+sshkey_client = j.clients.sshkey.get(sshkey_name)
+pubkey = sshkey_client.pubkey
+zos_node.client.bash('echo "{}" >> /root/.ssh/authorized_keys'.format(pubkey)).get()
+```
+
+
+In case of a Packet.net machine we cannot add an addional external/public network interface, we only get the one set by Packet.net:
+```
+node.pubconfig['netinfo'][0]['address'] 
+```
+
+Optionally, check the bridges on the Zero-OS:
+```python
+zos_client.bridge.list()
+```
+
+Let's create a gateway:
+```python
+gw_name3 = "my-gw3"
+gw3 = zos_node.primitives.create_gateway(name=gw_name3)
+```
+
+Because the public interface assigned by Packet.net is already in use by Zero-OS itself, we can not use it directly in the gateway but instead we use the internal NATting feature of Zero-OS and forward all ports needed by the gateway from the Zero-OS.
+```python
+public_net = gw3.networks.add(name='public', type_='default')
+```
+
+Define the ZeroTier private network:
+```python
+zt_client = j.clients.zerotier.get(instance=zt_config_instance_name)
+zt_app_network_name = 'app_network'
+zt_private_network = gw3.networks.add_zerotier(network=zt_client, name=zt_app_network_name)
+```
+
+The above will result in the gateway create the ZeroTier network, in case you want to create the ZeroTier network yourself/explicitly:
+```python
+zt_client = j.clients.zerotier.get(instance=zt_config_instance_name)
+zt_app_network_name = 'app_network'
+auto_assign_range2 = '10.147.20.0/24'
+zt_app_network = zt_client.network_create(public=False, name=zt_app_network_name , auto_assign=True, subnet=auto_assign_range2)
+zt_private_network = gw3.networks.add_zerotier(network=zt_app_network)
+```
+
+Set a nameserver:
+```python
+private_net.hosts.nameservers = ['1.1.1.1']
+```
+
+Deploy the gateway:
+```python
+gw3.deploy()
+```
 
 ## Misc
 
