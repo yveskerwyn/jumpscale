@@ -13,8 +13,8 @@
 - [Authorize ZeroTier join request from node](#authorize-join)
 - [Attach OVC public network to virtual machine](#attach-network)
 - [Connect using the JumpScale client for Zero-OS](#zos-client)
-- [Authorize SSH key in Zero-OS node](#authorize-sshkey)
-- [Create an Open vSwitch (OVS) container](#ovs-container)
+- [SSH into the Zero-OS node](#authorize-sshkey)
+- [Configure Open vSwitch](#ovs-container)
 - [Create the Zero-OS gateway](#create-gw)
 - [Create a virtual machine](#create-vm)
 - [Authorize SSH key in virtual machine](#authorize-sshkey2)
@@ -256,7 +256,7 @@ zos_node.client.info.version()
 
 <a id="authorize-sshkey"></a>
 
-## Authorize SSH key in Zero-OS node
+## SSH into the Zero-OS node
 
 Since the machine was started development mode, you can SSH it.
 
@@ -297,7 +297,7 @@ ssh <zos_member.private_ip>
 
 <a id="ovs-container"></a>
 
-## Create an Open vSwitch (OVS) container
+## Configure Open vSwitch
 
 The Open vSwitch (OVS) container, needed in order to deploy the below GW: 
 ```python
@@ -404,7 +404,6 @@ gw_container.stop()
 > Make sure to take one of the gig-booteable flists: https://hub.gig.tech/gig-bootable
 
 
-
 Create (define) a new Ubuntu virtual machine:
 ```python
 vm_name = 'vm'
@@ -457,9 +456,9 @@ gw.portforwards.add(name='my_forward2', source=(public_net.name, 7122), target=(
 
 In case you need to remove this:
 ```python
-gw.httpproxies.remove('myproxy')
-gw.portforwards.remove('myforward1')
-gw.portforwards.remove('myforward2')
+gw.httpproxies.remove('my_proxy')
+gw.portforwards.remove('my_forward1')
+gw.portforwards.remove('my_forward2')
 ```
 
 Update the gateway:
@@ -485,7 +484,7 @@ zos_node.disks.list()
 
 Create a Zero-DB:
 ```python
-zdb_name = 'zdb'
+zdb_name = 'myzdb'
 zdb_dir = '/var/cache/zdb'
 zos_client.filesystem.mkdir(path=zdb_dir)
 zdb = zos_node.primitives.create_zerodb(name=zdb_name, path=zdb_dir)
@@ -536,6 +535,10 @@ vm.shutdown()
 Attach the disk:
 ```python
 vm.disks.add(name_or_disk=vdisk)
+```
+
+Deploy the virtual machine:
+```python
 vm.deploy()
 ```
 
