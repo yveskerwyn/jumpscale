@@ -25,6 +25,8 @@
 - [Create and attach a virtual disk](#create-vdisk)
 - [Test HTTP access](#http-access)
 - [Create a private network using ZeroTier instead of VXLAN](#private-zt)
+- [Boot a Zero-OS node on Packet.net](#packet-boot)
+- [Use the Zero-OS Node Robot to interact with the Zero-OS node](#zrobot)
 
 
 <a id="create-zt-network"></a>
@@ -723,10 +725,12 @@ Boot a VM with Zero-OS in the cloud space:
 ```python
 iyo_organization = 'zos-training-org'
 zos_kernel_params = ['organization={}'.format(iyo_organization), 'development', 'console=ttyS1,115200']
-zos_branch = 'v1.2.2'
+#zos_branch = 'v1.2.2'
+zos_branch = 'development'
 
 zos_hostname = 'my-zos-vm'
 zt_token = '...'
+#zt_admin_network_id = '9f77fc393e7fd8b4'
 zos_client, node, zt_ip_address = packet_client.startZeroOS(hostname=zos_hostname, plan='t1.small', facility='ams1', zerotierId=zt_admin_network_id, zerotierAPI=zt_token, wait=True, remove=False, params=zos_kernel_params, branch=zos_branch)
 ```
 
@@ -736,9 +740,17 @@ ipxe_url = 'ipxe: https://bootstrap.gig.tech/ipxe/{}/{}/'.format(zos_branch, zt_
 node = packet_client.startDevice(hostname=zos_hostname, plan='x1.small', facility='ams1', os='Custom iPXE', ipxeUrl=ipxe_url, wait=True, remove=False, sshkey=sshkey_name)
 ```
 
+Get the ID of the newly created device:
+```python
+packet_device = packet_client.getDevice(name=zos_hostname)
+packet_device_id = packet_device.id
+import os
+os.environ.putenv('device_id', packet_device_id)
+```
+
 Check to output from Zero-OS console:
 ```bash
-ssh 5c37a327-65fd-40fc-8998-4e0c07bfdd24@sos.ams1.packet.net
+ssh $device_id@sos.ams1.packet.net
 ```
 
 Using `packet_client.startZeroOS()` also implicitly creates and returns Zero-OS client, of which the configuration instance name is set to ZeroTier IP address:
@@ -778,7 +790,7 @@ zos_node.client.bash('echo "{}" >> /root/.ssh/authorized_keys'.format(pubkey)).g
 
 
 In case of a Packet.net machine we cannot add an addional external/public network interface, we only get the one set by Packet.net:
-```
+```python
 node.pubconfig['netinfo'][0]['address'] 
 ```
 
@@ -805,7 +817,7 @@ zt_app_network_name = 'app_network'
 zt_private_network = gw3.networks.add_zerotier(network=zt_client, name=zt_app_network_name)
 ```
 
-The above will result in the gateway create the ZeroTier network, in case you want to create the ZeroTier network yourself/explicitly:
+The above will result in the gateway creating the ZeroTier network, in case you want to create the ZeroTier network yourself/explicitly:
 ```python
 zt_client = j.clients.zerotier.get(instance=zt_config_instance_name)
 zt_app_network_name = 'app_network'
@@ -816,13 +828,216 @@ zt_private_network = gw3.networks.add_zerotier(network=zt_app_network)
 
 Set a nameserver:
 ```python
-private_net.hosts.nameservers = ['1.1.1.1']
+zt_private_network.hosts.nameservers = ['1.1.1.1']
 ```
 
 Deploy the gateway:
 ```python
 gw3.deploy()
 ```
+
+<a id = 'zrobot'></a>
+
+## Use the Zero-OS Node Robot to interact with the Zero-OS node
+
+
+Exit the interactive shell and make sure all (core9, lib9, prefab9) JumpScale repositories are update to date, and for each of them do the installation:
+```bash
+git pull
+pip3 install -e . 
+```
+
+Or from the interactive shell:
+```python
+j.tools.prefab.local.tools.git.pullRepo('https://github.com/Jumpscale/core9.git')
+j.tools.prefab.local.tools.git.pullRepo('https://github.com/Jumpscale/lib9.git')
+j.tools.prefab.local.tools.git.pullRepo('https://github.com/Jumpscale/prefab9.git')
+j.tools.prefab.local.js9.js9core.install(reset=False, branch='development', full=False)
+```
+
+Then get again into the interactive shell to clone the Zero-Robot repository and install the Zero-Robot:
+```python 
+j.tools.prefab.local.tools.git.pullRepo(url='git@github.com:zero-os/0-robot.git')
+j.tools.prefab.local.zero_os.zos_robot.install(branch="development", reset=True)
+```
+
+Once more exit the interactive shell and restart, as a result you will now have the Zero-Robot client available:
+```python
+j.clients.zrobot.list()
+```
+
+Create Zero-Robot client:
+```python
+zrobot_instance_name = 'my_robot'
+#zrobot_cfg = dict(url=zt_ip_address, jwt_=jwt)
+zrobot_url = 'http://{}:6600'.format(zos_node.addr)
+zrobot_cfg = dict(url=zrobot_url, jwt_=jwt)
+
+zrobot_client = j.clients.zrobot.get(instance=zrobot_instance_name, data=zrobot_cfg)
+#zrobot_client = j.clients.zrobot.get(instance=zrobot_instance_name)
+```
+
+Stream the Zero-Robot output - in another JumpScale interactice shell:
+```python
+#zos_node = j.clients.zos.sal.get_node(instance=zos_client.instance)
+zrobot_container = zos_node.containers.get(name='zrobot')
+
+subscription = zrobot_container.client.subscribe(job='zrobot')
+subscription.stream()
+```
+
+Get the `zrobot` interface:
+```python
+zrobot = j.clients.zrobot.robots[zrobot_instance_name]
+```
+
+
+```python
+NODE_UID = 'github.com/zero-os/0-templates/node/0.0.1'
+NETWORK_UID = 'github.com/zero-os/0-templates/network/0.0.1'
+VDISK_UID = 'github.com/zero-os/0-templates/vdisk/0.0.1'
+VM_UID = 'github.com/zero-os/0-templates/vm/0.0.1'
+GW_UID = 'github.com/zero-os/0-templates/gateway/0.0.1'
+```
+
+```python
+vm_mac = '54:40:12:34:56:78'
+vm_ip = '192.168.103.2'
+```
+
+
+Node service:
+```python
+node_data = {
+        'hostname': 'myzos'
+    }
+
+node_service = zrobot.services.find_or_create(NODE_UID, service_name='my_packet_node_service', data=node_data) 
+node_service.schedule_action('install').wait(die=True)
+```
+
+Network service - only needed when using VLAN and/or VXLAN network:
+```python
+network_data = {
+    'vlanTag': 2312,
+    'cidr': '10.210.0.0',
+    'bonded': False
+    }
+
+network_service = zrobot.services.find_or_create(NETWORK_UID, service_name='my_network', data=network_data) 
+```
+
+Use the network service to configure the network:
+```python
+data = {'node_name': 'local'}
+network_service.schedule_action('configure', data).wait(die=True)
+```
+
+Let's quickly, explicitly create a ZT network:
+```python
+zt_app_network_name = 'app_network'
+auto_assign_range2 = '10.147.20.0/24'
+zt_app_network = zt_client.network_create(public=False, name=zt_app_network_name , auto_assign=True, subnet=auto_assign_range2)
+zt_app_network_id = zt_app_network.id
+```
+
+@TODO Verify whether we can have the template do the above for us; as is supported by the SAL
+
+Define a gateway with a `default` public network, and a private `zerotier` network:
+
+```python
+gw_data = {
+    'hostname': 'mygw',
+    'domain': 'lan',
+    'networks': [
+        {
+        'name': 'public',
+        'type': 'default',
+        }, 
+        {
+        'name': 'private',
+        'type': 'zerotier',
+        'id': zt_app_network_id,
+        'ztClient' : zt_client
+         }]
+    }
+```
+
+Or in case of a public network of type `vlan`:
+```python
+gw_data = {
+    'hostname': 'mygw',
+    'domain': 'lan',
+    'networks': [
+        {
+        'name': 'public',
+        'type': 'vlan',
+        'id': 0,
+        'config': {
+            'cidr': '192.168.59.200/25',
+            'gateway': '192.168.59.254'
+            }
+        }, 
+        {
+        'name': 'private',
+        'type': 'vxlan',
+        'id': 100,
+        'config': {
+            'cidr': '192.168.103.1/24',
+            },
+            'dhcpserver': {
+                'nameservers': ['1.1.1.1'],
+                'hosts': [{
+                    'hostname': 'myvm',
+                    'macaddress': vm_mac,
+                    'ipaddress': vm_ip
+                    }]
+                }
+        }],
+    
+    'portforwards': [{
+        'srcport': 34022,
+        'srcnetwork': 'public',
+        'dstip': vm_ip,
+        'dstport': 22,
+        'name': 'sshtovm'
+        }],
+    
+    'httpproxies': [{
+        'host': '192.168.59.200',
+        'destinations': ['http://{}:8000'.format(vm_ip)],
+        'types': ['http'],
+        'name': 'httpproxy'
+        }]
+    }
+```
+
+Create the gateway service:
+```python
+gw_service = zrobot.services.find_or_create(GW_UID, service_name='mygw', data=gw_data)
+gw_service.schedule_action('install').wait(die=True)
+```
+
+Virtual disk service:
+```python
+vdisk_data = {
+        'size': 10,
+        'diskType': 'HDD',
+        'mountPoint': '/mnt',
+        'filesystem': 'ext4',
+    }
+vdisk_service = zrobot.services.create(VDISK_UID, service_name='mydisk', data=vdisk_data)
+vdisk_service.schedule_action('install').wait(die=True)
+```
+
+Use the vdisk service to get the private URL of the virtual disk
+```python
+privateurl = vdiskservice.schedule_action('private_url').wait(die=True).result
+
+```
+
+
+
 
 ## Misc
 

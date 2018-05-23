@@ -153,7 +153,7 @@ js9
 
 Install the Zero-Robot using the Prefab module for Zero-Robot:
 ```python
-j.tools.prefab.local.zero_os.zos_robot.install(branch="development", reset=True)
+j.tools.prefab.local.zos.zos_robot.install(branch="development", reset=True)
 ```
 
 For old JumpScale installations, to reinstall psutil>=5.4.3, this in order to solve the JumpScale 9.3.0 requirement that PyYaml needs to be >=3.12:
