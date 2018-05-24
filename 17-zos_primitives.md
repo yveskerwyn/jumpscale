@@ -250,13 +250,13 @@ zos_client = j.clients.zos.get(instance=zos_instance_name, data=zos_cfg)
 
 Get the node interface and list the containers:
 ```python
-zos_node = j.clients.zos.sal.get_node(instance=zos_instance_name)
-zos_node.containers.list()
+zos_sal = j.clients.zos.sal.get_node(instance=zos_instance_name)
+zos_sal.containers.list()
 ```
 
 To check the flist version that was used:
 ```python
-zos_node.client.info.version()
+zos_sal.client.info.version()
 ```
 
 <a id="authorize-sshkey"></a>
@@ -284,12 +284,12 @@ sshkey_client = j.clients.sshkey.key_generate(path=sshkey_path)
  Authorize the new SSH key:
 ```python
 pubkey = sshkey_client.pubkey
-zos_node.client.bash('echo "{}" >> /root/.ssh/authorized_keys'.format(pubkey)).get()
+zos_sal.client.bash('echo "{}" >> /root/.ssh/authorized_keys'.format(pubkey)).get()
 ```
 
 Open port 22 for SSH Access:
 ```python
-zos_node.client.nft.open_port(22)
+zos_sal.client.nft.open_port(22)
 ```
 
 > The above will only allow SSH access on port 22 via the ZeroTier admin network.
@@ -307,13 +307,13 @@ ssh <zos_member.private_ip>
 The Open vSwitch (OVS) container, needed in order to deploy the below GW: 
 ```python
 ovs_container_name = 'ovs'
-zos_node.network.configure(cidr='192.168.69.0/24', vlan_tag=2312, ovs_container_name=ovs_container_name)
+zos_sal.network.configure(cidr='192.168.69.0/24', vlan_tag=2312, ovs_container_name=ovs_container_name)
 ```
 
 This creates another container, running Open vSwitch (`ovs`) bridging to the VLAN with tag `2312`:
 ```python
-zos_node.containers.list()
-ovs_container = zos_node.containers.get(name=ovs_container_name)
+zos_sal.containers.list()
+ovs_container = zos_sal.containers.get(name=ovs_container_name)
 ```
 
 <a id="create-gw"></a>
@@ -323,7 +323,7 @@ ovs_container = zos_node.containers.get(name=ovs_container_name)
 Create a Gateway:
 ```python
 gw_name = 'my-gw'
-gw = zos_node.primitives.create_gateway(name=gw_name)
+gw = zos_sal.primitives.create_gateway(name=gw_name)
 ```
 
 > At this point the actual container is not yet created, this only happens later when executing `gw_container.deploy()`
@@ -360,13 +360,13 @@ gw.deploy()
 
 There is no API to list the gateways, since there is no state kept about this in the node, that's the job of the remote 0-robot, you simply need to now the container - once deployed:
 ```python
-zos_node.containers.list()
-gw_container = zos_node.containers.get(name=gw_name)
+zos_sal.containers.list()
+gw_container = zos_sal.containers.get(name=gw_name)
 ```
 
 Check the result:
 ```python
-zos_node.client.bash('ip -d l').get()
+zos_sal.client.bash('ip -d l').get()
 ```
 
 Serialize the gateway configuration to JSON: 
@@ -376,7 +376,7 @@ gw_json_string = gw.to_json()
 
 This allows you to define a Gateway SAL from JSON:                              
 ```python
-gw = zos_node.primitives.from_json(type_="gateway", json=gw_json_string)
+gw = zos_sal.primitives.from_json(type_="gateway", json=gw_json_string)
 ```
 
 Loop through the gateway networks:
@@ -394,7 +394,7 @@ gw.networks.remove(private_net) # remove network using its object
 
 In order to delete the gateway from the Zero-OS node:
 ```python
-zos_node.primitives.drop_gateway(name=gw_name)
+zos_sal.primitives.drop_gateway(name=gw_name)
 ```
 
 Or:
@@ -412,12 +412,12 @@ gw_container.stop()
 Create (define) a new Ubuntu virtual machine:
 ```python
 vm_name = 'vm'
-vm = zos_node.primitives.create_virtual_machine(name=vm_name, type_='ubuntu:lts')
+vm = zos_sal.primitives.create_virtual_machine(name=vm_name, type_='ubuntu:lts')
 
-#vm = zos_node.primitives.create_virtual_machine(name=vm_name, type_='ubuntu:latest')
+#vm = zos_sal.primitives.create_virtual_machine(name=vm_name, type_='ubuntu:latest')
 #vm.flist = 'https://hub.gig.tech/gig-bootable/ubuntu:16.04.flist'
 
-#zos_node.primitives.drop_virtual_machine(name=vm_name)
+#zos_sal.primitives.drop_virtual_machine(name=vm_name)
 
 #vm.memory = 1024 
 #vm.cpu_nr = 1
@@ -484,7 +484,7 @@ As a next step we will add a disk to the virtual machine. This requires us to fi
 
 In order to list the physical disks on the Zero-OS node:
 ```python
-zos_node.disks.list()
+zos_sal.disks.list()
 ```
 
 Create a Zero-DB:
@@ -492,22 +492,22 @@ Create a Zero-DB:
 zdb_name = 'myzdb'
 zdb_dir = '/var/cache/zdb'
 zos_client.filesystem.mkdir(path=zdb_dir)
-zdb = zos_node.primitives.create_zerodb(name=zdb_name, path=zdb_dir)
+zdb = zos_sal.primitives.create_zerodb(name=zdb_name, path=zdb_dir)
 ```
 
 In order to delete the Zero-DB do one of the following:
 ```python
-zos_node.primitives.drop_zerodb(name=zdb_name)
+zos_sal.primitives.drop_zerodb(name=zdb_name)
 ```
 
 Or:
 ```python
-zdb_container = zos_node.containers.get(name=zdb_name).stop()
+zdb_container = zos_sal.containers.get(name=zdb_name).stop()
 ```
 
 NOT NEEDED - is done automatically when deploying the your first virtual isk:
 ```python
-nft = zos_node.client.nft
+nft = zos_sal.client.nft
 nft.open_port(9900)
 ```
 
@@ -523,7 +523,7 @@ zdb.deploy()
 Create (define) a disk:
 ```python
 vdisk_name = 'vdisk'
-vdisk = zos_node.primitives.create_disk(name=vdisk_name, zdb=zdb, mountpoint='/mnt', filesystem='btrfs') 
+vdisk = zos_sal.primitives.create_disk(name=vdisk_name, zdb=zdb, mountpoint='/mnt', filesystem='btrfs') 
 #zdisk.mountpoint = '/mnt'
 ```
 
@@ -549,7 +549,7 @@ vm.deploy()
 
 check the result:
 ```python
-zos_node.client.bash('virsh list').get()
+zos_sal.client.bash('virsh list').get()
 ```
 
 <a id="http-access"></a>
@@ -590,13 +590,13 @@ zt_app_network_id = zt_app_network.id
 
 Drop the existing GW:
 ```python
-zos_node.primitives.drop_gateway(name=gw_name)
+zos_sal.primitives.drop_gateway(name=gw_name)
 ```
 
 Create a new one:
 ```python
 gw2_name = 'my-gw2'
-gw2 = zos_node.primitives.create_gateway(name=gw2_name)
+gw2 = zos_sal.primitives.create_gateway(name=gw2_name)
 ```
 
 Define the public leg, same as before:
@@ -618,7 +618,7 @@ private_net.hosts.nameservers = ['1.1.1.1']
 Define a new VM:
 ```python
 vm2_name = 'vm2'
-vm2 = zos_node.primitives.create_virtual_machine(name=vm2_name, type_='ubuntu:lts')
+vm2 = zos_sal.primitives.create_virtual_machine(name=vm2_name, type_='ubuntu:lts')
 
 vm2.configs.add(name='mysshkey', path='/root/.ssh/authorized_keys', content=sshkey_client.pubkey)
 ```
@@ -626,7 +626,7 @@ vm2.configs.add(name='mysshkey', path='/root/.ssh/authorized_keys', content=sshk
 Deploy a new disk:
 ```python
 vdisk2_name = 'vdisk2'
-vdisk2 = zos_node.primitives.create_disk(name=vdisk2_name, zdb=zdb, mountpoint='/mnt', filesystem='btrfs')
+vdisk2 = zos_sal.primitives.create_disk(name=vdisk2_name, zdb=zdb, mountpoint='/mnt', filesystem='btrfs')
 vdisk2.deploy()
 ```
 
@@ -728,7 +728,7 @@ zos_kernel_params = ['organization={}'.format(iyo_organization), 'development', 
 #zos_branch = 'v1.2.2'
 zos_branch = 'development'
 
-zos_hostname = 'my-zos-vm'
+zos_hostname = 'my-zos-node'
 zt_token = '...'
 #zt_admin_network_id = '9f77fc393e7fd8b4'
 zos_client, node, zt_ip_address = packet_client.startZeroOS(hostname=zos_hostname, plan='t1.small', facility='ams1', zerotierId=zt_admin_network_id, zerotierAPI=zt_token, wait=True, remove=False, params=zos_kernel_params, branch=zos_branch)
@@ -736,7 +736,9 @@ zos_client, node, zt_ip_address = packet_client.startZeroOS(hostname=zos_hostnam
 
 `packet_client.startZeroOS()` calls `packet_client.startDevice()`, which you can alternalivy use if you prefer to pass the iPXE URL and authorize the join request explicitetly:
 ```python
-ipxe_url = 'ipxe: https://bootstrap.gig.tech/ipxe/{}/{}/'.format(zos_branch, zt_admin_network_id) + '%20'.join(zos_kernel_params)
+#ipxe_url = 'ipxe: https://bootstrap.gig.tech/ipxe/{}/{}/'.format(zos_branch, zt_admin_network_id) + '%20'.join(zos_kernel_params)
+ipxe_url = 'ipxe: http://unsecure.bootstrap.gig.tech/ipxe/{}/{}/'.format(zos_branch, zt_admin_network_id) + '%20'.join(zos_kernel_params)
+
 node = packet_client.startDevice(hostname=zos_hostname, plan='x1.small', facility='ams1', os='Custom iPXE', ipxeUrl=ipxe_url, wait=True, remove=False, sshkey=sshkey_name)
 ```
 
@@ -775,8 +777,14 @@ zos_client.config.data_set(key='password_', val=jwt)
 
 In order to access the Zero-OS node interface, and list all containers:
 ```python
-zos_node = j.clients.zos.sal.get_node(instance=zos_client.instance)
-zos_node.containers.list()
+zos_sal = j.clients.zos.sal.get_node(instance=zos_client.instance)
+#zos_sal = j.clients.zos.sal.get_node(instance=zt_ip_address)
+zos_sal.containers.list()
+```
+
+Check the version:
+```python
+zos_sal.client.info.version()
 ```
 
 Authorize SSH access:
@@ -785,7 +793,7 @@ sshkey_name = 'my_sshkey'
 sshkey_path = "/root/.ssh/{}".format(sshkey_name)
 sshkey_client = j.clients.sshkey.get(sshkey_name)
 pubkey = sshkey_client.pubkey
-zos_node.client.bash('echo "{}" >> /root/.ssh/authorized_keys'.format(pubkey)).get()
+zos_sal.client.bash('echo "{}" >> /root/.ssh/authorized_keys'.format(pubkey)).get()
 ```
 
 
@@ -802,7 +810,7 @@ zos_client.bridge.list()
 Let's create a gateway:
 ```python
 gw_name3 = "my-gw3"
-gw3 = zos_node.primitives.create_gateway(name=gw_name3)
+gw3 = zos_sal.primitives.create_gateway(name=gw_name3)
 ```
 
 Because the public interface assigned by Packet.net is already in use by Zero-OS itself, we can not use it directly in the gateway but instead we use the internal NATting feature of Zero-OS and forward all ports needed by the gateway from the Zero-OS.
@@ -840,7 +848,6 @@ gw3.deploy()
 
 ## Use the Zero-OS Node Robot to interact with the Zero-OS node
 
-
 Exit the interactive shell and make sure all (core9, lib9, prefab9) JumpScale repositories are update to date, and for each of them do the installation:
 ```bash
 git pull
@@ -870,7 +877,7 @@ Create Zero-Robot client:
 ```python
 zrobot_instance_name = 'my_robot'
 #zrobot_cfg = dict(url=zt_ip_address, jwt_=jwt)
-zrobot_url = 'http://{}:6600'.format(zos_node.addr)
+zrobot_url = 'http://{}:6600'.format(zos_sal.addr)
 zrobot_cfg = dict(url=zrobot_url, jwt_=jwt)
 
 zrobot_client = j.clients.zrobot.get(instance=zrobot_instance_name, data=zrobot_cfg)
@@ -879,11 +886,18 @@ zrobot_client = j.clients.zrobot.get(instance=zrobot_instance_name, data=zrobot_
 
 Stream the Zero-Robot output - in another JumpScale interactice shell:
 ```python
-#zos_node = j.clients.zos.sal.get_node(instance=zos_client.instance)
-zrobot_container = zos_node.containers.get(name='zrobot')
+j.clients.zos.list()
+zos_instance_name = '10.147.19.53'
+zos_sal = j.clients.zos.sal.get_node(instance=zos_instance_name)
+zrobot_container = zos_sal.containers.get(name='zrobot')
 
 subscription = zrobot_container.client.subscribe(job='zrobot')
 subscription.stream()
+```
+
+Check the version of the Zero-Robot on the node:
+```python
+zos_sal.containers.get('zrobot').info
 ```
 
 Get the `zrobot` interface:
@@ -891,9 +905,9 @@ Get the `zrobot` interface:
 zrobot = j.clients.zrobot.robots[zrobot_instance_name]
 ```
 
-
 ```python
 NODE_UID = 'github.com/zero-os/0-templates/node/0.0.1'
+ZT_UID = 'github.com/zero-os/0-templates/zerotier_client/0.0.1'
 NETWORK_UID = 'github.com/zero-os/0-templates/network/0.0.1'
 VDISK_UID = 'github.com/zero-os/0-templates/vdisk/0.0.1'
 VM_UID = 'github.com/zero-os/0-templates/vm/0.0.1'
@@ -905,6 +919,7 @@ vm_mac = '54:40:12:34:56:78'
 vm_ip = '192.168.103.2'
 ```
 
+Let's first create a [node service](https://github.com/zero-os/0-templates/tree/master/templates/node).
 
 Node service:
 ```python
@@ -912,7 +927,7 @@ node_data = {
         'hostname': 'myzos'
     }
 
-node_service = zrobot.services.find_or_create(NODE_UID, service_name='my_packet_node_service', data=node_data) 
+node_service = zrobot.services.find_or_create(template_uid=NODE_UID, service_name='my_packet_node_service', data=node_data) 
 node_service.schedule_action('install').wait(die=True)
 ```
 
@@ -933,13 +948,22 @@ data = {'node_name': 'local'}
 network_service.schedule_action('configure', data).wait(die=True)
 ```
 
+Create a ZeroTier service:
+```python
+zt_data = {'token': zt_token}
+zt_service_name = 'my_zt_service'
+zt_service = zrobot.services.find_or_create(template_uid=ZT_UID, service_name=zt_service_name, data=zt_data)
+```
+
 Let's quickly, explicitly create a ZT network:
 ```python
 zt_app_network_name = 'app_network'
 auto_assign_range2 = '10.147.20.0/24'
-zt_app_network = zt_client.network_create(public=False, name=zt_app_network_name , auto_assign=True, subnet=auto_assign_range2)
+zt_app_network = zt_client.network_create(public=False, name=zt_app_network_name, auto_assign=True, subnet=auto_assign_range2)
 zt_app_network_id = zt_app_network.id
+zt_app_network_id = 'c7c8172af144c172'
 ```
+
 
 @TODO Verify whether we can have the template do the above for us; as is supported by the SAL
 
@@ -958,7 +982,7 @@ gw_data = {
         'name': 'private',
         'type': 'zerotier',
         'id': zt_app_network_id,
-        'ztClient' : zt_client
+        'ztClient' : zt_service_name
          }]
     }
 ```
@@ -1014,7 +1038,7 @@ gw_data = {
 
 Create the gateway service:
 ```python
-gw_service = zrobot.services.find_or_create(GW_UID, service_name='mygw', data=gw_data)
+gw_service = zrobot.services.find_or_create(template_uid=GW_UID, service_name='mygw', data=gw_data)
 gw_service.schedule_action('install').wait(die=True)
 ```
 
