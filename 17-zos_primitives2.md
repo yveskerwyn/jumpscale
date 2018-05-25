@@ -2,7 +2,7 @@
 
 ## Demo setup
 
-![](images/zos_primitives_demo_setup2.png)
+![](images/zos_primitives_demo_setup3.png)
 
 ## Demo steps
 
