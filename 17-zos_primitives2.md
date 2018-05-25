@@ -2,7 +2,7 @@
 
 ## Demo setup
 
-![](images/zos_primitives_demo_setup1.png)
+![](images/zos_primitives_demo_setup2.png)
 
 ## Demo steps
 
@@ -22,7 +22,6 @@
 - [Create the ZeroTier service](#zt-service)
 - [Create the gateway service](#gw-service)
 - [Create virtual disk service](#vdisk-service)
-
 - [Using the SAL](#sal)
 
 
@@ -429,8 +428,6 @@ Use the vdisk service to get the private URL of the virtual disk
 privateurl = vdiskservice.schedule_action('private_url').wait(die=True).result
 
 ```
-
-
 
 
 
