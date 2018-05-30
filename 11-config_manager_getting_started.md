@@ -43,11 +43,24 @@ We recommend to create the repository in the following path: `$GIT_SERVER/$GIT_A
 ```bash
 GIT_SERVER="docs.grid.tf"
 GIT_ACCOUNT="yves"
-REPO_NAME="my_jsconfig"
+REPO_NAME="jsconfig"
 JS_CONFIG_REPO_DIR="/opt/code/$GIT_SERVER/$GIT_ACCOUNT/$REPO_NAME"
 mkdir -p $JS_CONFIG_REPO_DIR
 cd $JS_CONFIG_REPO_DIR
 git init #optional
+```
+
+Or if first create a private Git repository on your Git server, and then execute:
+```bash
+GIT_SERVER="docs.grid.tf"
+GIT_ACCOUNT="yves"
+REPO_NAME="jsconfig"
+JS_CONFIG_REPO_DIR="/opt/code/$GIT_SERVER/$GIT_ACCOUNT/$REPO_NAME"
+git clone ssh://git@docs.grid.tf:7022/yves/jsconfig.git
+touch README.md
+git add .
+git commit -m "first commit"
+git push
 ```
 
 <a id="init"></a>
@@ -59,21 +72,36 @@ In order to mark the above created Git repository as your configuration reposito
 js9_config init --path $JS_CONFIG_REPO_DIR --key $JS_CONFIG_SSHKEY_PATH
 ``` 
 
-Or from the interactive shell:
+Or from the interactive shell, first prepare the configuration:
 ```python
-sshkey_name = "jsconfig_key"
-sshkey_path = "/root/.ssh/{}".format(sshkey_name)
-sshkey_client = j.clients.sshkey.key_generate(path=sshkey_path, passphrase='hello')
-
 git_server = "docs.grid.tf"
 git_account = "yves"
-repo_name = "my_jsconfig"
-config_path = "{}/{}/{}/{}".format(j.dirs.CODEDIR, git_server, git_account, repo_name)
+repo_name = "jsconfig"
 
 jsconfig = {}
 jsconfig["email"] = "yves@gig.tech"
 jsconfig["login_name"] = "yves"
 jsconfig["fullname"] = "Yves Kerwyn"
+```
+
+Then for an existing SSH key, in this case for `~/.ssh/id_rsa`, execute:
+```python
+import os
+sshkey_path = os.path.expanduser(path='~/.ssh/id_rsa')
+config_path = "{}/{}/{}/{}".format(j.dirs.CODEDIR, git_server, git_account, repo_name)
+
+
+j.tools.configmanager.init(data=jsconfig, silent=True, configpath=config_path, keypath=sshkey_path)
+```
+
+Or for a new SSH key:
+```python
+sshkey_name = "jsconfig_key"
+sshkey_path = "/root/.ssh/{}".format(sshkey_name)
+sshkey_client = j.clients.sshkey.key_generate(path=sshkey_path, passphrase='hello')
+
+
+config_path = "{}/{}/{}/{}".format(j.dirs.CODEDIR, git_server, git_account, repo_name)
 
 j.tools.configmanager.init(data=jsconfig, silent=False, configpath=config_path, keypath=sshkey_path)
 ```

@@ -91,7 +91,6 @@ Check the result:
 ```python
 zt_admin_network = zt_client.network_get(network_id=zt_admin_network_id)
 zt_admin_network.config
-zt_admin_network.config['ipAssignmentPools']
 ```
 
 <a id="join-zt-network"></a>
