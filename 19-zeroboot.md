@@ -5,7 +5,6 @@ https://github.com/zero-os/0-boot-templates
 - [Dependencies](#dependencies)
 - [Install OpenWRT on your router](#install-openwrt)
 - [Set router password](#set-password)
-- [Update firewall of router](fw-rules)
 - [Create the ZeroTier network](#create-zt)
 - [Join the ZeroTier network](#join-zt)
 - [Install an configure the Zero-Boot server on your OpenWRT router](#zboot-server)
@@ -17,9 +16,11 @@ https://github.com/zero-os/0-boot-templates
 <a id='dependencies'></a>
 ## Depenencies
 
+
 ```bash
 pip3 install pyghmi
 ```
+
 
 <a id='install-openwrt'></a>
 ## Install OpenWRT on your router
@@ -56,23 +57,6 @@ Set the password:
 
 Click **Save & Apply**.
 
-
-
-<a id='fw-rules'></a>
-
-## Update firewall of router
-
-Skip - not needed.
-
-![](images/rules.png)
-
-SSH rule:
-
-![](images/rules_ssh.png)
-
-HTTPS rule:
-
-![](images/rules_https.png)
 
 <a id='create-zt'></a>
 
@@ -118,7 +102,7 @@ zt_client.networks_list()
 
 Set the name of the ZeroTier network you want to use as your zero-boot network:
 ```python
-zt_zboot_network_name = 'zboot network'
+zt_zboot_network_name = 'zboot new network'
 ```
 
 If this ZeroTier network was already created before, get it using the network id:
@@ -161,12 +145,13 @@ router_addr = '192.168.1.1'
 ssh_client_instance_name = 'router'
 ssh_client_cfg = dict(addr=router_addr, login='root', passwd_='rooter')
 ssh_client = j.clients.ssh.get(instance=ssh_client_instance_name, data=ssh_client_cfg)
+#ssh_client = j.clients.ssh.get(instance=ssh_client_instance_name)
 ```
 
 Install the `bash`, `openssh-sftp-server`, `openssl-util,` `coreutils-base64` and `tmux` on the router:
 ```python
-ssh_client.execute(cmd="opkg update")
-ssh_client.execute(cmd="opkg install bash openssh-sftp-server openssl-util coreutils-base64 tmux")
+ssh_client.execute(cmd='opkg update')
+ssh_client.execute(cmd='opkg install bash openssh-sftp-server openssl-util coreutils-base64 tmux')
 ```
 
 Use the Zero-Boot prefab module to install and configure the Zero-Boot server:
@@ -175,9 +160,7 @@ prefab = ssh_client.prefab
 prefab.network.zeroboot.install(network_id=zboot_zt_network_id, token=zt_token)
 ```
 
-
-
-Now (physically) disconnect from the direct connection with your OpenWRT router and reconnect over the ZeroTier network:
+Physically disconnect from your OpenWRT router and reconnect over the ZeroTier network:
 ```python
 router_zt_addr = '172.28.29.97'
 ssh_client_instance_name2 = 'router_zt'
@@ -200,20 +183,20 @@ Also see: https://github.com/Jumpscale/prefab9/blob/development/docs/prefab.zero
 
 ## Get a Zero-Boot Client
 
+@TODO, when listing all ZT config instances, an instance with the name 'main' got created, not sure yet when, and why
+
 Get a client for your Zero-Boot server, make sure to specify the ZT configuration of your OpenWRT router:
 ```python
 zboot_instance_name = 'my_zboot'
 zboot_cfg = dict(sshclient_instance=ssh_client_instance_name2, zerotier_instance=zt_config_instance_name, network_id=zt_zboot_network_id)
 zboot_client = j.clients.zboot.get(instance=zboot_instance_name, data=zboot_cfg)
 #zboot_client = j.clients.zboot.get(instance=zboot_instance_name)
+```
 
+Check:
+```python
 zboot_client.config
 zboot_client.networks.list()
-zboot_client.networks.get?
-nw = zboot_client.networks.get('192.168.1.1/24')
-nw.hosts.add?
-host = nw.hosts.add(mac='88:91:DD:00:0F:1D', '192.168.1.100', 'racktivity')
-host = nw.hosts.add('88:91:DD:00:0F:1D', '192.168.1.100', 'racktivity')
 ```
 
 
@@ -222,17 +205,20 @@ host = nw.hosts.add('88:91:DD:00:0F:1D', '192.168.1.100', 'racktivity')
 ## Assign a static host address to the Racktivity PDU
 
 
-Connect the Racktivity PDU to the OpenWRT router. As a result the PDU wil a dynamic IP address from the DHCP server; on the router see **DHCP Leases** under **Status | Overview**.
+Get the MAC address of your Racktivity PDU from the small PDU display:
+```python
+racktivity_mac_addr = '88:91:DD:00:0F:1D'
+```
 
 In order to make this a static IP address execute:
 ```python
-racktivity_mac_addr = '88:91:DD:00:0F:1D'
 racktivity_ip_addr = '192.168.1.100'
 racktivity_hostname = 'rack1'
 lan_network = zboot_client.networks.get(subnet='192.168.1.1/24')
 racktivity = lan_network.hosts.add(mac=racktivity_mac_addr, address=racktivity_ip_addr, hostname=racktivity_hostname)
 ```
 
+Connect the Racktivity PDU to the OpenWRT router. As a result the PDU wil a dynamic IP address from the DHCP server; on the router see **DHCP Leases** under **Status | Overview**.
 
 <a id='#racktivity-client'></a>
 
