@@ -1,5 +1,5 @@
 
-## Getting started with JumpScale 9.3.0 Demo Script
+# Getting started with JumpScale 9.3.0 Demo Script
 
 - [Installation of JumpSale](#installation)
 - [SAL](sal)

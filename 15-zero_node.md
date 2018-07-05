@@ -26,7 +26,7 @@ On Packet.net
 - Type: `t1.small`
 - Customer iPXE: https://bootstrap.gig.tech/ipxe/development/17d709436c5bc232/organization=zos-training-org%20development
 
-Or using the unsecure bootstrap - since sometimes Packet refuses our SSL:
+Or using the insecure bootstrap - since sometimes Packet refuses our SSL:
 http://unsecure.bootstrap.gig.tech/ipxe/development/17d709436c5bc232/organization=zos-training-org%20development
 
 

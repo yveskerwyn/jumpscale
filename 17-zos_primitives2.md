@@ -25,7 +25,6 @@
 - [Using the SAL](#sal)
 
 
-
 <a id="create-zt-network"></a>
 
 ## Create the ZeroTier network
@@ -476,6 +475,3 @@ Deploy the gateway:
 ```python
 gw3.deploy()
 ```
-
-<a id = 'zrobot'></a>
-

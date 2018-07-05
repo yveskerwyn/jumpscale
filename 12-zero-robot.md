@@ -130,10 +130,14 @@ j.clients.zrobot.get
 
 ```
 
-
-
 <a id="host"></a>
 ## On your host
+
+First make sure you have an up to date JumpScale installation, execute the following in the `core9`, `lib9` and `prefab9` directories:
+```bash
+git pull
+pip install -e .
+```
 
 Using the [0-robot installation instructions](https://github.com/zero-os/0-robot/blob/development/docs/getting_started.md#install-0-robot):
 ```bash
