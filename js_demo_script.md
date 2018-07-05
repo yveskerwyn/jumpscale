@@ -325,7 +325,7 @@ sshkey_client.load()
 
 node_ipaddr = "10.147.18.206"
 sshconn_name = "js9_sandbox"
-sshconn_cfg = dict(addr=node_ipaddr, port=2200, login="root", sshkey=sshkey_name, allow_agent=True)
+sshconn_cfg = dict(addr=ip_addr, port=2200, login="root", sshkey=sshkey_name, allow_agent=True)
 
 ssh_client = j.clients.ssh.get(instance=sshconn_name, data=sshconn_cfg, use_paramiko=False)
 
