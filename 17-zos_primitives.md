@@ -165,8 +165,8 @@ Boot a VM with Zero-OS in the cloud space:
 ```python
 vm_name = 'my-zos-vm'
 iyo_organization = 'zos-training-org'
-zos_kernel_params = ['organization={}'.format(iyo_organization), 'development', 'console=ttyS1,115200']
-zos_branch = 'v1.2.2'
+zos_kernel_params = ['organization={}'.format(iyo_organization), 'development']
+zos_branch = 'v1.4.1'
 
 ipxe_url = 'ipxe: https://bootstrap.gig.tech/ipxe/{}/{}/'.format(zos_branch, zt_admin_network_id) + '%20'.join(zos_kernel_params)
 

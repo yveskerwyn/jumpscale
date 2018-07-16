@@ -156,7 +156,7 @@ zt_token = '...'
 zos_client, node, zt_ip_address = packet_client.startZeroOS(hostname=zos_hostname, plan='t1.small', facility='ams1', zerotierId=zt_admin_network_id, zerotierAPI=zt_token, wait=True, remove=False, params=zos_kernel_params, branch=zos_branch)
 ```
 
-`packet_client.startZeroOS()` calls `packet_client.startDevice()`, which you can alternalivy use if you prefer to pass the iPXE URL and authorize the join request explicitetly:
+`packet_client.startZeroOS()` calls `packet_client.startDevice()`, which you can alternatively use if you prefer to pass the iPXE URL and authorize the join request explicitly:
 ```python
 #ipxe_url = 'ipxe: https://bootstrap.gig.tech/ipxe/{}/{}/'.format(zos_branch, zt_admin_network_id) + '%20'.join(zos_kernel_params)
 ipxe_url = 'ipxe: http://unsecure.bootstrap.gig.tech/ipxe/{}/{}/'.format(zos_branch, zt_admin_network_id) + '%20'.join(zos_kernel_params)

@@ -49,7 +49,10 @@ zt_machine_addr = local_prefab.network.zerotier.get_zerotier_machine_address()
 
 ## Config Manager
 
-Initialize the Config Manager - from command line:
+Initialize the Config Manager can be done from the command line, or from the JumpScale interactive shell.
+
+### From the command line
+
 ```bash
 # Create a SSH key pair for encrypting the secret data
 JS_CONFIG_SSHKEY_PATH="/root/.ssh/jsconfig_key"
@@ -70,13 +73,65 @@ git init
 js9_config init --path $JS_CONFIG_REPO_DIR --key $JS_CONFIG_SSHKEY_PATH
 ```
 
+### From the interactive shell
+
+Set the path to the directory where the configuration data will be saved:
+```python
+git_server = 'docs.grid.tf'
+git_account = 'yves'
+git_repo_name = 'jsconfig'
+config_path = '{}/{}/{}/{}'.format(j.dirs.CODEDIR, git_server, git_account, git_repo_name)
+```
+
+Create the SSH key that will be used by your configuration manager:
+```python
+sshkey_name = 'id_rsa'
+j.tools.prefab.local.system.ssh.keygen(user='root', keytype='rsa', name=sshkey_name)
+```
+
+Save the path to your SSH key in a variable:
+```python
+import os
+sshkey_path = os.path.expanduser(path='~/.ssh/{}'.format(sshkey_name))
+```
+
+Specify some personal data that will be saved by the configuration manager:
+```python
+jsconfig = {}
+jsconfig['email'] = 'yves@gig.tech'
+jsconfig['login_name'] = 'yves'
+jsconfig['fullname'] = 'Yves Kerwyn'
+```
+
+Do the actual initialization, passing the above information:
+```python
+j.tools.configmanager.init(data=jsconfig, silent=True, configpath=config_path, keypath=sshkey_path)
+```
+
+Initialize the specified directory as a Git repository: 
+```python
+script = 'git init {}/{}/{}/{}'.format(j.dirs.CODEDIR, git_server, git_account, git_repo_name)
+j.tools.executor.local_get().execute(script)
+```
+
+Or:
+```python
+script = 'git init {}/{}/{}/{}'.format(j.dirs.CODEDIR, git_server, git_account, git_repo_name)
+j.tools.prefab.local.system.base.core.execute_bash(script)
+```
+
+Check the result:
+```python
+!ls /opt/code/docs.grid.tf/yves/jsconfig/
+```
+
 ItsYou.online:
 ```python
 app_id = "g3XV1CMpTD2mvkaLqdtARmfbOASy"
 secret = "6kRMy9Zzh99lsqDq6eyab6y_M5aN"
 iyo_cfg = dict(application_id_=app_id, secret_= secret)
 
-iyo_config_instance = j.tools.configmanager.configure(location="j.clients.itsyouonline", instance="main", data=iyo_cfg, interactive=True)
+iyo_config_instance = j.tools.configmanager.configure(location="j.clients.itsyouonline", instance="main", data=iyo_cfg, interactive=False)
 ```
 
 <a id="clients"></a>
@@ -153,14 +208,14 @@ pip install ipcalc
 
 If you already have a configuration instance for Packet.net:
 ```python
-packet_cfg_instance_name = "yves"
+packet_cfg_instance_name = 'main'
 packet_client = j.clients.packetnet.get(instance=packet_cfg_instance_name)
 ```
 
 If not, create it:
 ```python
-packet_api_key = "..."
-packet_project_name = "GIG Engineering"
+packet_api_key = '...'
+packet_project_name = 'GIG Engineering'
 packet_cfg = dict(auth_token_=packet_api_key, project_name=packet_project_name)
 packet_client = j.clients.packetnet.get(instance=packet_cfg_instance_name, data=packet_cfg)
 ```
@@ -291,7 +346,18 @@ job.get()
 
 ### SSH key
 
+For an existing SSH key:
+```python
+sshkey_name = "id_rsa"
+sshkey_path = "/root/.ssh/{}".format(sshkey_name)
 
+sshkey_cfg = dict(path=sshkey_path)
+
+# note that j.clients.sshkey.list() only lists the loaded ssh keys
+sshkey_client = j.clients.sshkey.get(instance='main', data=sshkey_cfg, create=True)
+```
+
+For a new SSH key:
 ```python
 sshkey_name = "another_key"
 sshkey_path = "/root/.ssh/{}".format(sshkey_name)
@@ -303,7 +369,7 @@ sshkey_client = j.clients.sshkey.key_generate(path=sshkey_path, passphrase='hell
 j.tools.configmanager.list("j.clients.sshkey")
 ```
 
-Authorize key:]
+Authorize key:
 ```
 js9_sandbox_container.client.system(command='touch /root/.ssh/authorized_keys')
 
